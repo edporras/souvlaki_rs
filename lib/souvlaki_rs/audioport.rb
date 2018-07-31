@@ -7,173 +7,135 @@ module SouvlakiRS
   #
   # scraping AudioPort.org
   module Audioport
-    @creds = SouvlakiRS::Config.get_host_info(:audioport)
-    @mm = nil
-    @TMP_DIR = nil
-
     # ====================================================================
     # returns the audioport spider agent instance, initializing it and
     # login in when invoked for the first time
-    def self.spider
-      if @mm.nil?
-        @TMP_DIR = SouvlakiRS::Util.get_tmp_path('audioport')
+    def self.setup_spider(creds)
+      # initialize and log in
+      agent = create_spider
+      login(agent, creds)
 
-        # initialize and log in
-        @mm = Mechanize.new do |agent|
-          agent.user_agent_alias = 'Windows Mozilla'
-          agent.follow_meta_refresh = true
-          agent.redirect_ok = true
-          agent.keep_alive = true
-          agent.open_timeout = 30
-          agent.read_timeout = 30
-          #          agent.pluggable_parser['audio/mpeg'] = Mechanize::DirectorySaver.save_to(SouvlakiRS::Util.get_tmp_path)
-        end
-
-        # get the login page
-        uri = "#{@creds[:base_uri]}?op=login&amp;"
-        @mm.get(uri)
-
-        # There are two forms on the page with the same script:
-        # - GET form for search
-        # - POST form for login in
-        # Submit the login form :)
-        @mm.page.form_with(method: 'POST') do |f|
-          f.email    = @creds[:username]
-          f.password = @creds[:password]
-        end.submit
-
-        if !@mm.page.content.include? 'You are logged in.'
-          SouvlakiRS.logger.error 'Audioport user login failed'
-          raise 'Couldn\'t log in'
-        end
-
-        SouvlakiRS.logger.info 'Audioport user logged in'
+      if !agent.page.content.include? 'You are logged in.'
+        SouvlakiRS.logger.error 'Audioport user login failed'
+        return nil
       end
 
-      @mm
+      SouvlakiRS.logger.info 'Audioport user logged in'
+      agent
     end
 
+    def self.logged_in?(agent)
+      !agent.page.link_with(text: "Logout").nil?
+    end
+
+    # creates a configured mechanize instance
+    def self.create_spider
+      Mechanize.new do |agent|
+        agent.user_agent_alias = 'Mac Safari'
+        agent.follow_meta_refresh = true
+        agent.redirect_ok = true
+        agent.keep_alive = true
+        agent.open_timeout = 30
+        agent.read_timeout = 30
+        #          agent.pluggable_parser['audio/mpeg'] = Mechanize::DirectorySaver.save_to(SouvlakiRS::Util.get_tmp_path)
+      end
+    end
+
+    def self.login(agent, creds)
+      # get the login page
+      agent.get("#{creds[:base_uri]}?op=login&amp;")
+
+      # There are two forms on the page with the same script:
+      # - GET form for search
+      # - POST form for login in
+      # Submit the login form :)
+      agent.page.form_with(method: 'POST') do |f|
+        f.email    = creds[:username]
+        f.password = creds[:password]
+      end.submit
+    end
+
+    DATE_FORMAT = '%Y-%m-%d'.freeze
     # ====================================================================
     # spider audioport to fetch the most recent entry for a given
     # program and return its mp3 if it matches the date
     def self.fetch_files(show_name, date, show_name_uri)
-      files = []
+      creds = SouvlakiRS::Config.get_host_info(:audioport)
+      agent = setup_spider(creds)
+      return [] if agent.nil?
 
-      # audioport date format
-      show_date = date.strftime('%Y-%m-%d')
+      tmp_dir = SouvlakiRS::Util.get_tmp_path('audioport').freeze
+      show_date = date.strftime(DATE_FORMAT) # audioport date format
+      files = []
 
       SouvlakiRS.logger.info "Audioport fetch for '#{show_name}', date: #{show_date}"
 
-      # go to the show's page
-      uri = "#{@creds[:base_uri]}?op=series&amp;series=#{show_name_uri}"
-
       begin
-        spider.get(uri)
-        SouvlakiRS.logger.info "fetched '#{uri}', status code: #{spider.page.code.to_i}"
+        # go to the show's RSS feed
+        rss_uri = "/rss.php?series=#{show_name_uri}"
+        rss = agent.get(rss_uri)
 
-        # we have the page of results. Audioport formats this a little funky:
-        # <div id="result_set">
-        #   <table>
-        #     <tr> td headings </tr>
-        #     <tr><td>latest show's 'program name' </tr> (unterminated td)
-        #     <tr><td></td><td>producer</td><td>date (YYYY-MM-DD format)</td><td>length</td></tr>
-        #
-        # start by getting the list of tr
-        trs = spider.page.search('//div[@id="result_set"]').search('tr')
+        SouvlakiRS.logger.info "fetched RSS feed from '#{rss_uri}', status code: #{agent.page.code.to_i}"
 
-        ii = 2
-        while ii < trs.length
-          # therefore, we find each entry every-other one starting from
-          # the 3rd TR and then fetch the 3rd td to extract the date -
-          # also, replace \u00a0 for &nbsp; and strip to remove
-          # surrounding whitespace
-          date = trs[ii].search('td')[2].text.delete(' ').strip
+        chan_pub_date = rss.search('//channel/pubDate').text
+        chan_pub_date = Time.parse(chan_pub_date).strftime(DATE_FORMAT)
 
-          break if date < show_date
+        if chan_pub_date < show_date
+          SouvlakiRS.logger.info " Found date (#{pub_date}) is earlier than requested date"
+          return files
+        else
+#          items = rss.search('//item')
 
-          SouvlakiRS.logger.info " TR #{ii} is #{date}"
-
-          if date == show_date
-            # we have a match so we must follow to the next page which
-            # actually carries the link to the MP3. Grab the first link to
-            # the programs that corresponds to the entry we matched
-            links = spider.page.links
-            uris = links.select { |l| l.href.include? 'program-info' if l.href }
-            uri = uris[(ii / 2) - 1]
-
-            SouvlakiRS.logger.info "date match (#{date}) - following #{uri.href}"
-            uri.click
-
-            # we're now on the final page that contains the link(s) to
-            # download - look by searching for 'file_id'.
-            uri_list = spider.page.links.select { |l| l.href.include? 'file_id' if l.href }
-
-            SouvlakiRS.logger.warn 'No entries found for date' if uri_list.empty?
-
-            jj = 0
-            uri_list.each do |l|
-              SouvlakiRS.logger.info "starting download for #{l.href}"
-
-              # fetch the data
-              data = spider.get(l.href)
-              if data
-                # filename might be in header's content-disposition
-                filename = ''
-                if data.header['content-disposition']
-                  cd = data.header['content-disposition'].split('=')
-                  if cd.length > 1
-                    # extract the filename
-                    path = cd[1].gsub(/\A"|"\Z/, '')
-                    filename = "#{path.slice(0..(path.downcase.index('.mp3')))}mp3"
-                  end
-                end
-
-                SouvlakiRS.logger.info "Header content-disposition: #{filename}"
-
-                if filename.empty?
-                  # not included - make one up
-                  filename = "#{show_date}-#{show_name}-#{jj}.mp3"
-                end
-
-                dest_file = File.join(@TMP_DIR, filename)
-
-                # delete if it exists
-                FileUtils.rm_f(dest_file) if File.exist?(dest_file)
-
-                data.save_as(dest_file)
-
-                SouvlakiRS.logger.info "File saved: #{dest_file}"
-
-                # either downloaded it or file was there already
-                files << dest_file
-
-                # some audioport pages have the file linked twice w/
-                # different urls. TODO: don't bother fetching more than
-                # 1 until we find out if there are cases we should -
-                # perhaps check label?
-                break
-              else
-                SouvlakiRS.logger.error 'download failed'
-              end
-
-              jj += 1
-            end
+          last_item_date = rss.search('//item/pubDate').text
+          date = Time.parse(last_item_date).strftime(DATE_FORMAT)
+          if date != show_date
+            SouvlakiRS.logger.info 'date requested not found'
+            return files
           end
 
-          ii += 2
+          SouvlakiRS.logger.info "date match (#{date})"
+          mp3_url = rss.search('//item/enclosure').attribute('url').value
+          url = URI.parse(mp3_url)
+          filename = File.basename(url.path)
+
+          # 2018-07-31 - audioport changed something and now we have to log in repeatedly
+          login(agent, creds)
+          SouvlakiRS.logger.info "starting download for #{mp3_url}"
+
+          # fetch the data
+          data = agent.get(mp3_url)
+          if data
+            dest_file = File.join(tmp_dir, filename)
+
+            # delete if it exists
+            FileUtils.rm_f(dest_file) if File.exist?(dest_file)
+
+            data.save_as(dest_file)
+
+            SouvlakiRS.logger.info "File saved: #{dest_file}"
+
+            # either downloaded it or file was there already
+            files << dest_file
+          else
+            SouvlakiRS.logger.error 'download failed'
+          end
         end
       rescue StandardError => e
-        SouvlakiRS.logger.error "Error when fetching \"#{uri}\": #{e}"
+        SouvlakiRS.logger.error "Error when fetching \"#{show_name}\": #{e}"
         return nil
       end
 
       # logout
-      logout_btn = spider.page.link_with(text: "Logout")
-      logout_btn.click unless logout_btn.nil?
-#      uri = "#{@creds[:base_uri]}?op=logout&amp;"
-#      spider.get(uri)
+      #logout(agent)
+      #      uri = "#{@creds[:base_uri]}?op=logout&amp;"
+      #      agent.get(uri)
 
       files
+    end
+
+    def self.logout(agent)
+      logout_btn = agent.page.link_with(text: "Logout")
+      logout_btn.click unless logout_btn.nil?
     end
   end
 end
