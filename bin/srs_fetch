@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
-# -*- coding: utf-8 -*-
 
-$LOAD_PATH << File.expand_path( File.dirname(__FILE__) + '/../lib' )
+$LOAD_PATH << File.expand_path(File.dirname(__FILE__) + '/../lib')
 
 require 'optparse'
 require 'date'
@@ -10,101 +9,102 @@ require 'souvlaki_rs'
 # This hash will hold all of the options parsed from the command-line
 options = {}
 optparse = OptionParser.new do |opts|
-  opts.banner  = "Usage: #{$0} [options] program_code"
+  opts.banner = "Usage: #{$PROGRAM_NAME} [options] program_code"
 
   options[:write_tags] = false
-  opts.on( '-t', '--tag', 'Rewrite tags to the file if needed before importing.' ) do
+  opts.on('-t', '--tag', 'Rewrite tags to the file if needed before importing.') do
     options[:write_tags] = true
   end
 
   options[:import] = false
-  opts.on( '-i', '--import', 'Import downloaded into Airtime.' ) do
+  opts.on('-i', '--import', 'Import downloaded into Airtime.') do
     options[:import] = true
   end
 
   options[:post] = false
-  opts.on( '-p', '--post', 'Post notification to Basecamp.' ) do
+  opts.on('-p', '--post', 'Post notification to Basecamp.') do
     options[:post] = true
   end
 
-  opts.on( '-a', '--all_opts', 'Equivalent to running with -t -i -p.' ) do
+  opts.on('-a', '--all_opts', 'Equivalent to running with -t -i -p.') do
     options[:write_tags] = true
     options[:import] = true
     options[:post] = true
   end
 
   options[:date] = nil
-  opts.on( '-d', '--pub_date YYYYMMDD', 'Use specified date ("YYYYMMDD") instead of default date.' ) do |date|
+  opts.on('-d', '--pub_date YYYYMMDD', 'Use specified date ("YYYYMMDD") instead of default date.') do |date|
     begin
       options[:date] = Date.strptime(date, '%Y%m%d')
-    rescue
-      SouvlakiRS::logger.error "Invalid date argument (#{date})"
+    rescue StandardError => e
+      SouvlakiRS.logger.error "Invalid date argument (#{date}): #{e}"
       exit
     end
   end
 
   options[:bc_msg_id] = nil
-  opts.on( '-b', '--basecamp_msg_id MSG_ID', 'Use the provided basecamp message id for notifications.' ) do |msg_id|
+  opts.on('-b',
+          '--basecamp_msg_id MSG_ID',
+          'Use the provided basecamp message id for notifications.') do |msg_id|
     options[:bc_msg_id] = msg_id
   end
 
   options[:verbose] = false
-  opts.on( '-v', '--verbose', 'Logs info messages in addition to warn and errors.' ) do
+  opts.on('-v', '--verbose', 'Logs info messages in addition to warn and errors.') do
     options[:verbose] = true
   end
 
-  opts.on( '-l', '--list_program_codes', 'Display list of program codes to pass as the argument.' ) do
+  opts.on('-l', '--list_program_codes', 'Display list of program codes to pass as the argument.') do
     SouvlakiRS::Config.list_program_codes
     exit
   end
 
-  opts.on( '-h', '--help', 'Display this screen' ) do
-    $stderr.puts opts
+  opts.on('-h', '--help', 'Display this screen') do
+    warn opts
     exit
   end
 end
 optparse.parse!
 
 # arg check
-if ARGV.size < 1
-  $stderr.puts optparse
+if ARGV.empty?
+  warn optparse
   exit 1
 end
 
 #
 # this handles processing fetch the corresponding program's file(s)
 def process_program(program, pub_date, bc, options)
-
   if !program.key?(:pub_title) || !program.key?(:creator) || !program.key?(:name)
-    SouvlakiRS::logger.error "No :pub_title, :creator, and/or :name specified"
+    SouvlakiRS.logger.error 'No :pub_title, :creator, and/or :name specified'
     return false
   end
 
   status = false
 
-  SouvlakiRS::logger.info "Fetching #{program[:pub_title]} for #{pub_date}, source: #{program[:source]}"
+  SouvlakiRS.logger.info "Fetching #{program[:pub_title]} for #{pub_date}, source: #{program[:source]}"
   files = []
 
   case program[:source]
   when :file
-    if !program.key?(:base_url)
-      SouvlakiRS::logger.error "No :base_url for file download specified"
+    unless program.key?(:base_url)
+      SouvlakiRS.logger.error 'No :base_url for file download specified'
       return false
     end
 
     file_url = program[:base_url]
     file_url << "/#{pub_date.strftime(program[:format])}" if program.key?(:format)
 
-    files = SouvlakiRS::remote_file_download(program[:pub_title], file_url)
+    files = SouvlakiRS.remote_file_download(program[:pub_title], file_url)
   when :audioport
-    show_name_uri = (program.key?(:ap_uri) ? program[:ap_uri] : program[:pub_title].gsub(' ', '+'))
-    files = SouvlakiRS::audioport_download(program[:pub_title], pub_date, show_name_uri)
+    show_name_uri = (program.key?(:ap_uri) ? program[:ap_uri] : program[:pub_title].tr(' ', '+'))
+    files = SouvlakiRS.audioport_download(program[:pub_title], pub_date, show_name_uri)
   when :rss
-    if !program.key?(:feed)
-      SouvlakiRS::logger.error "No :feed entry specified"
+    unless program.key?(:feed)
+      SouvlakiRS.logger.error 'No :feed entry specified'
       return false
     end
-    files = SouvlakiRS::rss_download(program[:pub_title], program[:feed], pub_date)
+    files = SouvlakiRS.rss_download(program[:pub_title], program[:feed], pub_date)
   end
 
   # tag & import handling
@@ -118,59 +118,57 @@ def process_program(program, pub_date, bc, options)
     retitle = program.key?(:retitle) && program[:retitle]
     tags = SouvlakiRS::Tag.retag_file(f, album, artist, pub_date, options[:write_tags], retitle)
 
-    if !options[:write_tags]
-      SouvlakiRS::logger.info "Tags not rewritten. Read from file: Artist: '#{tags[:artist]}', Album: '#{tags[:album]}', Title: '#{tags[:title]}'"
+    unless options[:write_tags]
+      SouvlakiRS.logger.info("Tags not rewritten. Read from file: Artist: '#{tags[:artist]}', "\
+                             "Album: '#{tags[:album]}', Title: '#{tags[:title]}'")
     end
 
     # import to airtime
     if !options[:import]
-      SouvlakiRS::logger.warn "NOOP run - will not import #{f} - deleting"
+      SouvlakiRS.logger.warn "NOOP run - will not import #{f} - deleting"
       FileUtils.rm_f(f)
       program[:imported] = true
     else
       program[:imported] = SouvlakiRS::Airtime.import(f)
 
-      SouvlakiRS::logger.info "Airtime import '#{f}', status: #{program[:imported]}"
+      SouvlakiRS.logger.info "Airtime import '#{f}', status: #{program[:imported]}"
     end
 
     # save tags
     program[:tags] = tags
   end
 
-
   # append to notification
-  files.each do |f|
+  files.each do
+    next unless program[:imported]
 
-    if program[:imported]
-      msg = "#{program[:tags][:album]}: \"#{program[:tags][:title]}\""
+    msg = "#{program[:tags][:album]}: \"#{program[:tags][:title]}\""
 
-      # report warning if duration info is given and program's looks odd
-      if program.key?(:block)
-        block_len = program[:block]
-        min_len = block_len - (block_len / 5)
-        file_dur = program[:tags][:length] / 60.0
+    # report warning if duration info is given and program's looks odd
+    if program.key?(:block)
+      block_len = program[:block]
+      min_len = block_len - (block_len / 5)
+      file_dur = program[:tags][:length] / 60.0
 
-        if file_dur >= block_len || file_dur < min_len
-          d_hms = Time.at(program[:tags][:length]).utc.strftime("%H:%M:%S")
-          msg << " (Length warning: #{d_hms})"
-          SouvlakiRS::logger.warn "File duration (#{d_hms}) - block is #{block_len}"
-        end
+      if file_dur >= block_len || file_dur < min_len
+        d_hms = Time.at(program[:tags][:length]).utc.strftime('%H:%M:%S')
+        msg << " (Length warning: #{d_hms})"
+        SouvlakiRS.logger.warn "File duration (#{d_hms}) - block is #{block_len}"
       end
-
-      bc.add_text msg
-      status = true
     end
+
+    bc.add_text msg
+    status = true
   end
 
   status
 end
 
-
 # it all starts here
 #
-SouvlakiRS::logger.verbose(options[:verbose])
-SouvlakiRS::logger.info "#{$0} - using SouvlakiRS v#{SouvlakiRS::VERSION}"
-SouvlakiRS::logger.info "Running fetcher on #{Date.today} with code list: #{ARGV.join(' ')}"
+SouvlakiRS.logger.verbose(options[:verbose])
+SouvlakiRS.logger.info "#{$PROGRAM_NAME} - using SouvlakiRS v#{SouvlakiRS::VERSION}"
+SouvlakiRS.logger.info "Running fetcher on #{Date.today} with code list: #{ARGV.join(' ')}"
 
 req_date = options[:date] ? options[:date] : Date.today
 pub_date = nil
@@ -179,12 +177,12 @@ post = false
 program_codes = SouvlakiRS::Config.get_program_info
 
 codes = ARGV.uniq # remove dupes
-codes_str = codes.join(" ").strip
+codes_str = codes.join(' ').strip
 
 codes.each do |arg|
   code = arg.to_sym
-  if !program_codes.key?(code)
-    SouvlakiRS::logger.warn "Skipping unrecognized code '#{code}'"
+  unless program_codes.key?(code)
+    SouvlakiRS.logger.warn "Skipping unrecognized code '#{code}'"
     next
   end
 
@@ -195,11 +193,11 @@ codes.each do |arg|
   pub_date = req_date
   if !options[:date] && (!program.key?(:today) || !program[:today])
     pub_date -= 1
-    SouvlakiRS::logger.info "Backdating pub date to yesterday (#{pub_date})"
+    SouvlakiRS.logger.info "Backdating pub date to yesterday (#{pub_date})"
   end
 
   # set up the client for notifications
-  bc = SouvlakiRS::Basecamp::Comment.new("SRS v#{SouvlakiRS::VERSION} auto-import for #{req_date} (#{codes_str}):", options[:bc_msg_id]) if bc == nil
+  bc = SouvlakiRS::Basecamp::Comment.new("SRS v#{SouvlakiRS::VERSION} auto-import for #{req_date} (#{codes_str}):", options[:bc_msg_id]) if bc.nil?
 
   post |= process_program(program, pub_date, bc, options)
 end
