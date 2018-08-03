@@ -80,16 +80,18 @@ module SouvlakiRS
         chan_pub_date = rss.search('//channel/pubDate').text
         chan_pub_date = Time.parse(chan_pub_date).strftime(DATE_FORMAT)
 
-        if chan_pub_date < show_date
-          SouvlakiRS.logger.info " Found date (#{pub_date}) is earlier than requested date"
+        if chan_pub_date > show_date
+          SouvlakiRS.logger.info " RSS pub date (#{chan_pub_date}) is more recent than requested date"
           return files
         else
 #          items = rss.search('//item')
 
+          SouvlakiRS.logger.info " RSS was last updated on #{chan_pub_date}"
+
           last_item_date = rss.search('//item/pubDate').text
           date = Time.parse(last_item_date).strftime(DATE_FORMAT)
           if date != show_date
-            SouvlakiRS.logger.info 'date requested not found'
+            SouvlakiRS.logger.info "  item date #{date} does not match"
             return files
           end
 
@@ -122,7 +124,6 @@ module SouvlakiRS
         end
       rescue StandardError => e
         SouvlakiRS.logger.error "Error when fetching \"#{show_name}\": #{e}"
-        return nil
       end
 
       # logout
