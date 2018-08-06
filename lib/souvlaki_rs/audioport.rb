@@ -25,6 +25,8 @@ module SouvlakiRS
     end
 
     def self.logged_in?(agent)
+      raise "XML File" if agent.page.class == Mechanize::XmlFile
+
       !agent.page.link_with(text: "Logout").nil?
     end
 
@@ -33,7 +35,7 @@ module SouvlakiRS
       Mechanize.new do |agent|
         agent.user_agent_alias = 'Mac Safari'
         agent.follow_meta_refresh = true
-        agent.redirect_ok = true
+#        agent.redirect_ok = true
         agent.keep_alive = true
         agent.open_timeout = 30
         agent.read_timeout = 30
@@ -84,8 +86,6 @@ module SouvlakiRS
           SouvlakiRS.logger.info " RSS pub date (#{chan_pub_date}) is more recent than requested date"
           return files
         else
-#          items = rss.search('//item')
-
           SouvlakiRS.logger.info " RSS was last updated on #{chan_pub_date}"
 
           last_item_date = rss.search('//item/pubDate').text
@@ -96,12 +96,11 @@ module SouvlakiRS
           end
 
           SouvlakiRS.logger.info "date match (#{date})"
+
           mp3_url = rss.search('//item/enclosure').attribute('url').value
           url = URI.parse(mp3_url)
           filename = File.basename(url.path)
 
-          # 2018-07-31 - audioport changed something and now we have to log in repeatedly
-          login(agent, creds)
           SouvlakiRS.logger.info "starting download for #{mp3_url}"
 
           # fetch the data
