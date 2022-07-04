@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'fileutils'
 require 'filemagic'
 require 'uri'
@@ -15,6 +17,7 @@ module SouvlakiRS
     # tmp file
     def self.get_tmp_path(name = nil)
       return TMP_DIR_PATH if name.nil?
+
       File.join(TMP_DIR_PATH, name)
     end
 
@@ -40,6 +43,7 @@ module SouvlakiRS
         # checks if the type description contains 'MP3' or 'MPEG'
         return FileMagic.new.file(file)
       end
+
       nil
     end
 

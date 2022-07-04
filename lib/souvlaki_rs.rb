@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'souvlaki_rs/log'
 require 'souvlaki_rs/airtime'
 require 'souvlaki_rs/audioport'
@@ -7,8 +9,7 @@ require 'souvlaki_rs/fetch'
 require 'souvlaki_rs/mail'
 require 'souvlaki_rs/tag'
 require 'souvlaki_rs/util'
-require 'souvlaki_rs/version'
-require 'pry'
+require 'version'
 
 #
 # SouvlakiRS module
