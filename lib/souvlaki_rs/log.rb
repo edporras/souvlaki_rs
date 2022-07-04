@@ -1,9 +1,11 @@
+# frozen_string_literal: true
+
 require 'syslogger'
 
+# Logger
 module SouvlakiRS
-
+  # log to a local facility
   class Log
-
     SYS_LOG_FACILITY = Syslog::LOG_LOCAL7
 
     def initialize(task_name)
@@ -15,8 +17,8 @@ module SouvlakiRS
       @stderr = false
     end
 
-    def verbose(v)
-      @stderr = v
+    def verbose(lvl)
+      @stderr = lvl
     end
 
     def info(msg)
@@ -37,7 +39,7 @@ module SouvlakiRS
   end
 
   # for syslog - NOTE: using local7 - see log.rb
-  SYS_LOG_TASK_NAME='souvlaki_rs'
+  SYS_LOG_TASK_NAME = 'souvlaki_rs'
 
   # the logger instance
   @@_logger = Log.new(SYS_LOG_TASK_NAME)
@@ -45,5 +47,4 @@ module SouvlakiRS
   def self.logger
     @@_logger
   end
-
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'fileutils'
 require 'open-uri'
 require 'rss'
@@ -20,10 +22,10 @@ module SouvlakiRS
               saved_file.write(read_file.read)
             end
           end
-        rescue OpenURI::HTTPError => error
-          SouvlakiRS.logger.error "Read error when fetching \"#{uri}\": #{error.io.status[1]}"
-        rescue Timeout::Error
-          SouvlakiRS.logger.error "Connection timeout error when fetching \"#{uri}\": #{error.io.status[1]}"
+        rescue OpenURI::HTTPError => e
+          SouvlakiRS.logger.error "Read error when fetching \"#{uri}\": #{e.io.status[1]}"
+        rescue Timeout::Error => e
+          SouvlakiRS.logger.error "Connection timeout error when fetching \"#{uri}\": #{e.io.status[1]}"
           if File.exist(dest)
             FileUtils.rm(dest)
             SouvlakiRS.logger.info 'deleting remaining file'
@@ -74,7 +76,6 @@ module SouvlakiRS
       case f.feed_type
       when 'rss'
         f.items.each do |item|
-
           # return this (first entry) if no date is given
           return item.enclosure.url if date.nil?
 

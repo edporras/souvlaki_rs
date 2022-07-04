@@ -1,8 +1,9 @@
+# frozen_string_literal: true
+
 require 'net/https'
 require 'json'
 
 module SouvlakiRS
-
   module Basecamp
     USER_AGENT = 'SouvlakiRS Fetcher Notifier'
 
@@ -16,8 +17,8 @@ module SouvlakiRS
 
       #
       # add a line of text
-      def add_text(t)
-        @text << t
+      def add_text(txt)
+        @text << txt
         self
       end
 
@@ -26,22 +27,21 @@ module SouvlakiRS
       def post
         creds = SouvlakiRS::Config.get_host_info(:basecamp)
 
-        if creds == nil
-          SouvlakiRS::logger.error "Unable to load basecamp credentials"
+        if creds.nil?
+          SouvlakiRS.logger.error 'Unable to load basecamp credentials'
           return false
         end
 
         # prepare fields for the message
-        msg_id = ((@bc_msg_id == nil) ? creds[:msg_id] : @bc_msg_id)
+        msg_id = (@bc_msg_id.nil? ? creds[:msg_id] : @bc_msg_id)
 
         uri = URI.parse(creds[:base_uri])
 
         # set up the connection
-        Net::HTTP.start(uri.host, uri.port, :use_ssl => true) do |http|
-
+        Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
           headers = {
             'User-Agent' => "#{USER_AGENT} (#{creds[:ua_email]})",
-            'Content-Type' =>'application/json'
+            'Content-Type' => 'application/json'
           }
 
           # get the message first - wasteful but we need to get the
@@ -50,20 +50,20 @@ module SouvlakiRS
           request = Net::HTTP::Get.new(uri.request_uri, headers)
           request.basic_auth(creds[:username], creds[:password])
           response = http.request(request)
-          SouvlakiRS::logger.info "GET '#{uri.request_uri}' - response code #{response.code}"
+          SouvlakiRS.logger.info "GET '#{uri.request_uri}' - response code #{response.code}"
 
-          if !response.code.eql?('200')
-            SouvlakiRS::logger.error "Unable to retrieve basecamp message #{msg_id}"
+          unless response.code.eql?('200')
+            SouvlakiRS.logger.error "Unable to retrieve basecamp message #{msg_id}"
             return false
           end
 
           # get the list of subscribe ids
           ids = []
           begin
-            ids = JSON.parse(response.body)["subscribers"].map{|sub| sub["id"]}
-            SouvlakiRS::logger.info "Retrieved message subscriber ids: #{ids}"
+            ids = JSON.parse(response.body)['subscribers'].map { |sub| sub['id'] }
+            SouvlakiRS.logger.info "Retrieved message subscriber ids: #{ids}"
           rescue JSON::ParserError
-            SouvlakiRS::logger.error "Cannot parse JSON result"
+            SouvlakiRS.logger.error 'Cannot parse JSON result'
             return false
           end
 
@@ -73,14 +73,14 @@ module SouvlakiRS
           request.basic_auth(creds[:username], creds[:password])
 
           payload = {
-            "content" => message()
+            'content' => message
           }
-          payload["subscribers"] = ids if !ids.empty?
+          payload['subscribers'] = ids unless ids.empty?
           request.body = payload.to_json
 
           # send the request
           response = http.request(request)
-          SouvlakiRS::logger.info "POST '#{uri.request_uri}' - response code #{response.code}"
+          SouvlakiRS.logger.info "POST '#{uri.request_uri}' - response code #{response.code}"
 
           return true if response.code.eql?('201')
         end
@@ -88,18 +88,14 @@ module SouvlakiRS
         false
       end
 
-      private
       #
       # format the message
       def message
         c = "<p>#{@msg_head}<ul>"
         @text.each { |t| c << "<li>#{t}</li>" }
-        c << "<ul>"
+        c << '<ul>'
         c
       end
-
     end
-
   end
-
 end

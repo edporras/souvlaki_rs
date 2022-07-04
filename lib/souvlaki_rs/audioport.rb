@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+# frozen_string_literal: true
+
 require 'fileutils'
 require 'mechanize'
 require_relative 'config'
@@ -15,7 +16,7 @@ module SouvlakiRS
       agent = create_spider
       login(agent, creds)
 
-      if !agent.page.content.include? 'You are logged in.'
+      unless agent.page.content.include? 'You are logged in.'
         SouvlakiRS.logger.error 'Audioport user login failed'
         return nil
       end
@@ -25,9 +26,9 @@ module SouvlakiRS
     end
 
     def self.logged_in?(agent)
-      raise "XML File" if agent.page.class == Mechanize::XmlFile
+      raise 'XML File' if agent.page.instance_of? == Mechanize::XmlFile
 
-      !agent.page.link_with(text: "Logout").nil?
+      !agent.page.link_with(text: 'Logout').nil?
     end
 
     # creates a configured mechanize instance
@@ -35,11 +36,11 @@ module SouvlakiRS
       Mechanize.new do |agent|
         agent.user_agent_alias = 'Mac Safari'
         agent.follow_meta_refresh = true
-#        agent.redirect_ok = true
+        # agent.redirect_ok = true
         agent.keep_alive = true
         agent.open_timeout = 30
         agent.read_timeout = 30
-        #          agent.pluggable_parser['audio/mpeg'] = Mechanize::DirectorySaver.save_to(SouvlakiRS::Util.get_tmp_path)
+        # agent.pluggable_parser['audio/mpeg'] = Mechanize::DirectorySaver.save_to(SouvlakiRS::Util.get_tmp_path)
       end
     end
 
@@ -57,7 +58,7 @@ module SouvlakiRS
       end.submit
     end
 
-    DATE_FORMAT = '%Y-%m-%d'.freeze
+    DATE_FORMAT = '%Y-%m-%d'
     # ====================================================================
     # spider audioport to fetch the most recent entry for a given
     # program and return its mp3 if it matches the date
@@ -126,7 +127,7 @@ module SouvlakiRS
       end
 
       # logout
-      #logout(agent)
+      # logout(agent)
       #      uri = "#{@creds[:base_uri]}?op=logout&amp;"
       #      agent.get(uri)
 
@@ -134,8 +135,8 @@ module SouvlakiRS
     end
 
     def self.logout(agent)
-      logout_btn = agent.page.link_with(text: "Logout")
-      logout_btn.click unless logout_btn.nil?
+      logout_btn = agent.page.link_with(text: 'Logout')
+      logout_btn&.click
     end
   end
 end

@@ -1,9 +1,10 @@
+# frozen_string_literal: true
+
 require 'mail'
 
 module SouvlakiRS
   module Email
     def self.send(sender, recipient, subj, msg)
-
       mail = Mail.new do
         from     sender
         to       recipient
