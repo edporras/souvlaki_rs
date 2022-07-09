@@ -17,9 +17,12 @@ module SouvlakiRS
 
         # file hasn't been fetched
         begin
-          File.open(dest, 'wb') do |saved_file|
-            open(uri, 'rb') do |read_file|
-              saved_file.write(read_file.read)
+          case io = OpenURI.open_uri(uri)
+          when StringIO then File.open(dest, 'w') { |f| f.write(io.read) }
+          when Tempfile
+            begin
+              io.close
+              FileUtils.mv(io.path, dest)
             end
           end
         rescue OpenURI::HTTPError => e
