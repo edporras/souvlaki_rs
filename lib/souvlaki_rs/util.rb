@@ -23,10 +23,10 @@ module SouvlakiRS
 
     #
     # ensure dest directory exists
-    def self.check_destination(path, opts = {})
+    def self.check_destination(path, _opts = {})
       unless Dir.exist?(path)
         begin
-          FileUtils.mkdir_p(path, opts)
+          FileUtils.mkdir_p(path)
         rescue Errno::ENOENT
           SouvlakiRS.logger.error "Error making directory #{path}"
           return false
