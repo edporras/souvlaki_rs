@@ -14,8 +14,8 @@ require 'version'
 #
 # SouvlakiRS module
 module SouvlakiRS
-  #  TMP_DIR_PATH=File.join(File.expand_path('~'), 'tmp')
-  TMP_DIR_PATH = File.join('/srv/incoming').freeze
+  TMP_DIR_PATH = '/srv/tmp'
+  # TMP_DIR_PATH = File.join(File.expand_path('~'), 'tmp')
   #  AIRTIME_ROOT='/srv/incoming'
   AIRTIME_ROOT = TMP_DIR_PATH
 
