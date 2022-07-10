@@ -2,7 +2,7 @@
 
 module SouvlakiRS
   module Airtime
-    AIRTIME_IMPORT_CMD = '/usr/bin/airtime-import'
+    AIRTIME_IMPORT_CMD = '/srv/airtime/bin/libretime-import'
 
     def self.import(file)
       if !File.exist?(AIRTIME_IMPORT_CMD) || !File.executable?(AIRTIME_IMPORT_CMD)
@@ -10,7 +10,9 @@ module SouvlakiRS
         return false
       end
 
-      if system("sudo #{AIRTIME_IMPORT_CMD} -c \"#{file}\"")
+      creds = SouvlakiRS::Config.get_host_info(:libretime)
+
+      if system("#{AIRTIME_IMPORT_CMD} #{creds[:api_key]} \"#{file}\"")
         FileUtils.rm_f(file)
         return true
       end

@@ -11,7 +11,7 @@ needs:
   our signal
 * Airing of local and various syndicated programs from a variety of
   sources (RSS, [AudioPort](http://audioport.org/), self-hosted)
-* Use of [Basecamp](https://basecamp.com/2629044/) for WGOT-LP member
+* Use of [Basecamp 2](https://basecamp.com/) for WGOT-LP member
   and supporter communication
 
 This gem is installed on a linux system we manage and the fetching
@@ -27,3 +27,22 @@ we use to coordinate scheduling.
 
 The name is based on the wonderful song by Slowdive from their
 [Souvlaki](https://en.wikipedia.org/wiki/Souvlaki_(album)) release.
+
+## Installation
+
+```sh
+sudo rmdir /srv/airtime/bin
+sudo cp bin/libretime-import /srv/airtime/bin
+sudo chown -R www-data:www-data /srv/airtime/bin
+```
+
+You can add the bin folder to your path so you can easily find the
+`srs_fetch` script. Alternatively, if you have a ruby dev environment,
+build and install a local gem:
+
+```sh
+gem install bundler
+bundle install
+gem build souvlaki_rs
+gem install souvlaki_rs-*.gem
+```

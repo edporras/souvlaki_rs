@@ -1,15 +1,13 @@
 # frozen_string_literal: true
 
-$LOAD_PATH.push File.expand_path('lib', __DIR__)
-require 'souvlaki_rs/version'
+require_relative 'lib/version'
 
 Gem::Specification.new do |s|
   s.name               = 'souvlaki_rs'
   s.version            = SouvlakiRS::VERSION
   s.platform           = Gem::Platform::RUBY
-  s.default_executable = 'srs_fetch'
 
-  s.required_ruby_version = '>= 3.0.0'
+  s.required_ruby_version = '>= 2.7.0'
   s.required_rubygems_version = Gem::Requirement.new('>= 0') if s.respond_to? :required_rubygems_version=
 
   s.authors = ['Ed Porras']
@@ -24,7 +22,7 @@ Gem::Specification.new do |s|
                           .reject { |f| f =~ /\.txt/ }
                           .reject { |f| f =~ /\.edn/ }
 
-  s.executables = ['srs_fetch']
+  s.executables = %w[srs_fetch]
   s.homepage = 'http://rubygems.org/gems/souvlaki_rs'
   s.require_paths = ['lib']
   s.rubygems_version = '1.6.2'
@@ -37,7 +35,7 @@ Gem::Specification.new do |s|
   s.add_dependency('syslogger', '~> 1.6')
   s.add_dependency('taglib-ruby', '~> 0.7')
 
-  if s.respond_to? :specification_version
-    s.specification_version = 3
-  end
+  s.add_development_dependency('rubocop', '~> 1.31')
+
+  s.specification_version = 3 if s.respond_to? :specification_version
 end
