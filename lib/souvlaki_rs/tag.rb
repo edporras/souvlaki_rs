@@ -112,7 +112,7 @@ module SouvlakiRS
     #
     # tag a file
     def self.audio_file_write_tags(filepath, tags)
-      TagLib::MPEG::File.open(filepath) do |file|
+      status = TagLib::MPEG::File.open(filepath) do |file|
         [file.id3v1_tag, file.id3v2_tag].each do |tag|
           # Write basic attributes
           tag.album  = tags[:album]
@@ -122,9 +122,10 @@ module SouvlakiRS
         end
 
         file.save
-        return true
       end
+      return true if status
 
+      SouvlakiRS.logger.error "Failed to save tags for #{filepath}"
       false
     end
   end
