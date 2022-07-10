@@ -4,6 +4,7 @@ require 'edn'
 require_relative 'log'
 
 module SouvlakiRS
+  # config methods
   module Config
     PATH = ENV['HOME']
     FILE = File.join(PATH, '.souvlaki_rs') # file in EDN format
@@ -19,9 +20,10 @@ module SouvlakiRS
     end
 
     def self.get_host_info(host)
-      return get_entry(host) if exist?
+      val = get_entry(host) if exist?
+      return val unless val.nil?
 
-      nil
+      raise "No configuration exists for #{host}"
     end
 
     def self.get_program_info(code = nil)
@@ -46,7 +48,7 @@ module SouvlakiRS
 
         # read contents
         File.open(FILE) do |file|
-          @@data = EDN::read(file)
+          @@data = EDN.read(file)
         end
       end
 
