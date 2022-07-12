@@ -21,7 +21,6 @@ module SouvlakiRS
         return nil
       end
 
-      SouvlakiRS.logger.info 'Audioport user logged in'
       agent
     end
 
