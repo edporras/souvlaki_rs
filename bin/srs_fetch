@@ -142,7 +142,7 @@ def process_program(program, pub_date, bc, options)
   files.each do
     next unless program[:imported]
 
-    msg = "#{program[:tags][:album]}: \"#{program[:tags][:title]}\""
+    msg = "#{program[:tags][:title]}"
 
     # report warning if duration info is given and program's looks odd
     if program.key?(:block)
