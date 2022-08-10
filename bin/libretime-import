@@ -1,7 +1,17 @@
 #!/bin/bash
 
-if [[ $# -ne 2 ]]; then
-    echo "Usage: libretime_import API_KEY AUDIO_FILE"
+TRACK_TYPES=("syndicated" "legal-id" "local-show" "local-psa" "bumper")
+
+function usage {
+    echo "Usage: libretime_import API_KEY AUDIO_FILE [TRACK_TYPE]"
+    echo "  where,"
+    echo "                 API_KEY: api-key value from airtime/general config"
+    echo "              AUDIO_FILE: path to file to import"
+    echo "   TRACK_TYPE (optional): libretime track type, one of $TRACK_TYPES"
+}
+
+if test "$#" -lt 2; then
+    usage
     exit 1
 fi
 
@@ -13,10 +23,21 @@ if [[ ! -f "$FILE" ]]; then
     exit 1
 fi
 
+if test "$#" -eq 3; then
+    TT=$3
+
+    if [[ ! " ${TRACK_TYPES[@]} " =~ " $TT " ]]; then
+        echo -e "ERROR: Unrecognized track-type \e[31m$TT\e[0m"
+        echo
+        usage
+    fi
+fi
+
 resp=`curl -fL -X POST \
            'http://localhost:2201/rest/media' \
            -u "$API_KEY": \
            -F "file=@$FILE" \
+           --cookie "tt_upload=$TT" \
            --max-time 30 \
       | jq .import_status`
 

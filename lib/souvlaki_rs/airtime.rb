@@ -4,7 +4,7 @@ module SouvlakiRS
   module Airtime
     AIRTIME_IMPORT_CMD = '/srv/airtime/bin/libretime-import'
 
-    def self.import(file)
+    def self.import(file, track_type = 'syndicated')
       if !File.exist?(AIRTIME_IMPORT_CMD) || !File.executable?(AIRTIME_IMPORT_CMD)
         SouvlakiRS.logger.error "Airtime import cmd #{AIRTIME_IMPORT_CMD} not found"
         return false
@@ -12,7 +12,7 @@ module SouvlakiRS
 
       creds = SouvlakiRS::Config.get_host_info(:libretime)
 
-      if system("#{AIRTIME_IMPORT_CMD} #{creds[:api_key]} \"#{file}\"")
+      if system("#{AIRTIME_IMPORT_CMD} #{creds[:api_key]} \"#{file}\" #{track_type}")
         FileUtils.rm_f(file)
         return true
       end
