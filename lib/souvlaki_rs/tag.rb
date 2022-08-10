@@ -6,8 +6,11 @@ module SouvlakiRS
   module Tag
     #
     # retag a file fetched from web
-    def self.retag_file(file, def_album, def_artist, pub_date, write_tags, rewrite_title = true)
+    def self.retag_file(file, opts)
       tags = audio_file_read_tags(file)
+
+      def_album = opts[:def_album]
+      pub_date = opts[:pub_date]
 
       # prep the title - prepend the date to the album (show name) when
       # 1. there's no title tag
@@ -17,7 +20,7 @@ module SouvlakiRS
       if tags[:title].nil? ||
          tags[:title] == def_album ||
          (tags[:title].length.positive? && tags[:title].downcase.include?('mp3')) ||
-         rewrite_title
+         opts[:rewrite_title]
         date = pub_date.strftime('%Y%m%d')
         old_t = tags[:title] || ''
         tags[:title] = "#{date} #{def_album}"
@@ -30,13 +33,15 @@ module SouvlakiRS
       end
 
       # override artist & album (program name) to our consistent one
-      tags[:artist] = def_artist
       tags[:album] = def_album
+      tags[:artist] = opts[:def_artist]
+      tags[:genre] = opts[:def_genre]
 
       # and set year because, why not
       tags[:year] = pub_date.strftime('%Y').to_i
 
-      audio_file_write_tags(file, tags) if write_tags
+      # write to file if needed
+      audio_file_write_tags(file, tags) if opts[:write_tags]
 
       tags
     end
@@ -80,6 +85,7 @@ module SouvlakiRS
           tags[:title]  = copy_tag(id3v2.title)
           tags[:artist] = copy_tag(id3v2.artist)
           tags[:album]  = copy_tag(id3v2.album)
+          tags[:genre]  = copy_tag(id3v2.genre)
           tags[:year]   = id3v2.year if id3v2.year != 0
         end
 
@@ -118,6 +124,7 @@ module SouvlakiRS
           tag.album  = tags[:album]
           tag.artist = tags[:artist] unless tags[:artist].nil?
           tag.title  = tags[:title] unless tags[:title].nil?
+          tag.genre  = tags[:genre].to_s unless tags[:genre].nil?
           tag.year   = tags[:year] unless tags[:year].nil?
         end
 

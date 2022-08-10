@@ -112,11 +112,14 @@ def process_program(program, pub_date, bc, options)
     # retag:
     # - album is always set to program name (for consistency).
     # - artist (creator) is set if none is in the file
-    album = program[:name]
-    artist = program[:creator]
-
     retitle = program.key?(:retitle) && program[:retitle]
-    tags = SouvlakiRS::Tag.retag_file(f, album, artist, pub_date, options[:write_tags], retitle)
+    tags = SouvlakiRS::Tag.retag_file(f,
+                                      {def_album: program[:name],
+                                       def_artist: program[:creator],
+                                       def_genre: program[:genre],
+                                       pub_date:,
+                                       write_tags: options[:write_tags],
+                                       rewrite_title: retitle})
 
     unless options[:write_tags]
       SouvlakiRS.logger.info("Tags not rewritten. Read from file: Artist: '#{tags[:artist]}', "\
