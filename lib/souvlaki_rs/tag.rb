@@ -4,6 +4,15 @@ require 'taglib'
 
 module SouvlakiRS
   module Tag
+    def self.map_genres
+      TagLib::ID3v1.genre_list.each_with_index.to_h do |g, idx|
+        genre_k = g.downcase.gsub(%r{[\s\-+/]}, '_').gsub(/&/, 'n').intern
+        [genre_k, TagLib::ID3v1.genre(idx)]
+      end
+    end
+
+    GENRES = map_genres
+
     #
     # retag a file fetched from web
     def self.retag_file(file, opts)
@@ -99,7 +108,8 @@ module SouvlakiRS
           end
         end
 
-        tags[:length] = file.audio_properties.length if file.audio_properties
+        tags[:length] = file.audio_properties.length_in_seconds if file.audio_properties
+
         return tags
       end
 
@@ -118,13 +128,18 @@ module SouvlakiRS
     #
     # tag a file
     def self.audio_file_write_tags(filepath, tags)
+      if tags[:genre]
+        genre = GENRES[tags[:genre]] # unless tags[:genre].nil?
+        SouvlakiRS.logger.info "Mapped genre '#{tags[:genre]}' => '#{genre}'"
+      end
+
       status = TagLib::MPEG::File.open(filepath) do |file|
         [file.id3v1_tag, file.id3v2_tag].each do |tag|
           # Write basic attributes
           tag.album  = tags[:album]
           tag.artist = tags[:artist] unless tags[:artist].nil?
           tag.title  = tags[:title] unless tags[:title].nil?
-          tag.genre  = tags[:genre].to_s unless tags[:genre].nil?
+          tag.genre  = genre unless genre.nil?
           tag.year   = tags[:year] unless tags[:year].nil?
         end
 

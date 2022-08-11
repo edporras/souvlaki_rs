@@ -33,7 +33,7 @@ Gem::Specification.new do |s|
   s.add_dependency('mechanize', '~> 2.7')
   s.add_dependency('ruby-filemagic', '~> 0.7')
   s.add_dependency('syslogger', '~> 1.6')
-  s.add_dependency('taglib-ruby', '~> 0.7')
+  s.add_dependency('taglib-ruby', '~> 1.1')
 
   s.add_development_dependency('rubocop', '~> 1.31')
 
