@@ -2,16 +2,12 @@
 
 require 'edn'
 require_relative 'log'
+require_relative 'tag'
 
 module SouvlakiRS
   # config methods
   module Config
-    PATH = ENV['HOME']
-    FILE = File.join(PATH, '.souvlaki_rs') # file in EDN format
-
-    def self.exist?
-      File.exist? FILE
-    end
+    FILE = File.join(Dir.home, '.souvlaki_rs') # file in EDN format
 
     def self.list_program_codes
       pc = SouvlakiRS::Config.get_program_info
@@ -26,6 +22,13 @@ module SouvlakiRS
       raise "No configuration exists for #{host}"
     end
 
+    def self.validate_program_config(program_config)
+      genre = program_config[:genre]
+      raise "Unknown genre #{genre} for program code #{code}" if genre && Tag::GENRES[genre].nil?
+
+      program_config
+    end
+
     def self.get_program_info(code = nil)
       if exist?
         progs = get_entry(:programs)
@@ -33,7 +36,7 @@ module SouvlakiRS
         if progs
           return progs if code.nil?
 
-          return progs[code] if progs.key?(code)
+          return validate_program_config(progs[code])
         end
       end
       nil
@@ -41,8 +44,7 @@ module SouvlakiRS
 
     # will cache config data
     @@data = nil
-
-    def self.get_entry(e)
+    def self.get_entry(entry)
       if @@data.nil?
         return nil unless exist?
 
@@ -52,7 +54,7 @@ module SouvlakiRS
         end
       end
 
-      return @@data[e] if @@data&.key?(e)
+      return @@data[entry] if @@data&.key?(entry)
 
       nil
     end
