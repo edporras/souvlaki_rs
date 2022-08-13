@@ -28,10 +28,8 @@ Gem::Specification.new do |s|
   s.rubygems_version = '1.6.2'
 
   s.add_dependency('edn', '~> 1.1')
-  s.add_dependency('listen', '~> 3.0')
   s.add_dependency('mail', '~> 2.6')
   s.add_dependency('mechanize', '~> 2.7')
-  s.add_dependency('ruby-filemagic', '~> 0.7')
   s.add_dependency('syslogger', '~> 1.6')
   s.add_dependency('taglib-ruby', '~> 1.1')
 
