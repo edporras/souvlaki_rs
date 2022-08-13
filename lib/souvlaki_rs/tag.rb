@@ -43,29 +43,29 @@ module SouvlakiRS
 
     #
     # tries to retag a user's file imported manually
-    def self.retag_user_file(file, tags, def_album, def_artist = nil)
-      # if there's no title set, do nothing. Return nil to indicate error
-      if tags[:title].nil?
-        SouvlakiRS.logger.error "No title tag set for #{file}"
-        return nil
-      end
+    # def self.retag_user_file(file, tags, def_album, def_artist = nil)
+    #   # if there's no title set, do nothing. Return nil to indicate error
+    #   if tags[:title].nil?
+    #     SouvlakiRS.logger.error "No title tag set for #{file}"
+    #     return nil
+    #   end
 
-      # if the title looks like a filename, remove the extension
-      if tags[:title].downcase.end_with?('.mp3')
-        SouvlakiRS.logger.warn "Title tag looks like a filename (#{file}) - removing extension from tag"
-        tags[:title] = tags[:title][0..-4]
-      end
+    #   # if the title looks like a filename, remove the extension
+    #   if tags[:title].downcase.end_with?('.mp3')
+    #     SouvlakiRS.logger.warn "Title tag looks like a filename (#{file}) - removing extension from tag"
+    #     tags[:title] = tags[:title][0..-4]
+    #   end
 
-      # replace artist if specified
-      tags[:artist] = def_artist if def_artist
+    #   # replace artist if specified
+    #   tags[:artist] = def_artist if def_artist
 
-      # force album (program name or type)
-      tags[:album] = def_album
+    #   # force album (program name or type)
+    #   tags[:album] = def_album
 
-      audio_file_write_tags(file, tags)
+    #   audio_file_write_tags(file, tags)
 
-      tags
-    end
+    #   tags
+    # end
 
     #
     # read tags from a file
