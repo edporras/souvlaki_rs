@@ -6,8 +6,7 @@ syndicated audio files for WGOT-LP 94.7FM in Gainesville, FL. This
 won't likely be very useful to people since it fits our very specific
 needs:
 
-* Running Sourcefabric's
-  [Airtime](https://www.sourcefabric.org/en/airtime/) for broadcast of
+* Running [Libretime](https://libretime.org/) for broadcast of
   our signal
 * Airing of local and various syndicated programs from a variety of
   sources (RSS, [AudioPort](http://audioport.org/), self-hosted)
@@ -31,7 +30,7 @@ The name is based on the wonderful song by Slowdive from their
 ## Installation
 
 ```sh
-sudo rmdir /srv/airtime/bin
+sudo mkdir /srv/airtime/bin
 sudo cp bin/libretime-import /srv/airtime/bin
 sudo chown -R www-data:www-data /srv/airtime/bin
 ```
