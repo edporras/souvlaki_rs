@@ -8,10 +8,8 @@ module SouvlakiRS
     USER_AGENT = 'SouvlakiRS Fetcher Notifier'
 
     class Comment
-
-      def initialize(msg_head, msg_id = nil)
+      def initialize(msg_head)
         @msg_head = msg_head
-        @bc_msg_id = msg_id
         @text = []
       end
 
@@ -28,13 +26,12 @@ module SouvlakiRS
         creds = SouvlakiRS::Config.get_host_info(:basecamp)
 
         if creds.nil?
-          SouvlakiRS.logger.error 'Unable to load basecamp credentials'
+          SouvlakiRS.logger.error('Unable to load basecamp credentials')
           return false
         end
 
         # prepare fields for the message
-        msg_id = (@bc_msg_id.nil? ? creds[:msg_id] : @bc_msg_id)
-
+        msg_id = creds[:msg_id]
         uri = URI.parse(creds[:base_uri])
 
         # set up the connection

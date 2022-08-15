@@ -42,13 +42,6 @@ optparse = OptionParser.new do |opts|
     end
   end
 
-  options[:bc_msg_id] = nil
-  opts.on('-b',
-          '--basecamp_msg_id MSG_ID',
-          'Use the provided basecamp message id for notifications.') do |msg_id|
-    options[:bc_msg_id] = msg_id
-  end
-
   options[:verbose] = false
   opts.on('-v', '--verbose', 'Logs info messages in addition to warn and errors.') do
     options[:verbose] = true
@@ -114,12 +107,12 @@ def process_program(program, pub_date, bc, options)
     # - artist (creator) is set if none is in the file
     retitle = program.key?(:retitle) && program[:retitle]
     tags = SouvlakiRS::Tag.retag_file(f,
-                                      {def_album: program[:name],
-                                       def_artist: program[:creator],
-                                       def_genre: program[:genre],
-                                       pub_date:,
-                                       write_tags: options[:write_tags],
-                                       rewrite_title: retitle})
+                                     {def_album: program[:name],
+                                      def_artist: program[:creator],
+                                      def_genre: program[:genre],
+                                      pub_date: pub_date,
+                                      write_tags: options[:write_tags],
+                                      rewrite_title: retitle})
 
     unless options[:write_tags]
       SouvlakiRS.logger.info("Tags not rewritten. Read from file: Artist: '#{tags[:artist]}', "\
@@ -200,7 +193,7 @@ codes.each do |arg|
   end
 
   # set up the client for notifications
-  bc = SouvlakiRS::Basecamp::Comment.new("SRS v#{SouvlakiRS::VERSION} auto-import for #{req_date} (#{codes_str}):", options[:bc_msg_id]) if bc.nil?
+  bc = SouvlakiRS::Basecamp::Comment.new("SRS v#{SouvlakiRS::VERSION} auto-import for #{req_date} (#{codes_str}):") if bc.nil?
 
   post |= process_program(program, pub_date, bc, options)
 end
