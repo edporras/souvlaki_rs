@@ -8,9 +8,9 @@ module SouvlakiRS
   # utilities
   module Util
     #
-    # joins AIRTIME_ROOT with a subfolder for copying files to
+    # joins libretime's install path with a subfolder for copying files to
     def self.get_show_path(name)
-      File.join(AIRTIME_ROOT, name)
+      File.join(AIRTIME_CONFIG[:install_root], name)
     end
 
     #

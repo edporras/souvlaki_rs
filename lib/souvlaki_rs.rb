@@ -14,10 +14,8 @@ require 'version'
 #
 # SouvlakiRS module
 module SouvlakiRS
-  TMP_DIR_PATH = '/srv/tmp'
-  # TMP_DIR_PATH = File.join(File.expand_path('~'), 'tmp')
-  #  AIRTIME_ROOT='/srv/incoming'
-  AIRTIME_ROOT = TMP_DIR_PATH
+  AIRTIME_CONFIG = Config.get_host_info(:libretime)
+  TMP_DIR_PATH = File.join(AIRTIME_CONFIG[:install_root], 'tmp')
 
   # ------------------------------------------------------------------------
   # download and import the program's episode that matches the given
