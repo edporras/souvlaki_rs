@@ -109,7 +109,7 @@ module SouvlakiRS
             dest_file = File.join(tmp_dir, filename)
 
             # delete if it exists
-            FileUtils.rm_f(dest_file) if File.exist?(dest_file)
+            FileUtils.rm_f(dest_file)
 
             data.save_as(dest_file)
 
