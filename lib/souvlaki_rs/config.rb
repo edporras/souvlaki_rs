@@ -2,44 +2,26 @@
 
 require 'edn'
 require_relative 'log'
-require_relative 'tag'
 
 module SouvlakiRS
   # config methods
   module Config
     FILE = File.join(Dir.home, '.souvlaki_rs') # file in EDN format
 
-    def self.list_program_codes
-      pc = SouvlakiRS::Config.get_program_info
-      warn 'Configured code List:'
-      pc.each_pair { |code, data| warn " #{code}\t-\t'#{data[:pub_title]}'" }
-    end
-
     def self.get_host_info(host)
-      val = get_entry(host) if exist?
+      val = get_entry(host)
       return val unless val.nil?
 
       raise "No configuration exists for #{host}"
     end
 
-    def self.validate_program_config(program_config)
-      genre = program_config[:genre]
-      raise "Unknown genre #{genre} for program code #{code}" if genre && Tag::GENRES[genre].nil?
-
-      program_config
-    end
-
     def self.get_program_info(code = nil)
-      if exist?
-        progs = get_entry(:programs)
+      progs = get_entry(:programs)
+      return progs if code.nil?
 
-        if progs
-          return progs if code.nil?
-
-          return validate_program_config(progs[code])
-        end
-      end
-      nil
+      info = progs[code]
+      info[:code] = code
+      info
     end
 
     # will cache config data
@@ -56,7 +38,7 @@ module SouvlakiRS
 
       return @@data[entry] if @@data&.key?(entry)
 
-      nil
+      raise "Unknown config entry #{entry}"
     end
 
     def self.exist?
@@ -65,6 +47,12 @@ module SouvlakiRS
         exit
       end
       true
+    end
+
+    def self.list_program_codes
+      pc = get_program_info
+      warn 'Configured code List:'
+      pc.each_pair { |code, data| warn " #{code}\t-\t'#{data[:pub_title]}'" }
     end
   end
 end

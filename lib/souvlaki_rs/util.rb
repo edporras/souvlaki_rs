@@ -22,7 +22,7 @@ module SouvlakiRS
     end
 
     #
-    # ensure dest directory exists
+    # ensure dest directory exists TODO: check
     def self.check_destination(path, _opts = {})
       unless Dir.exist?(path)
         begin
@@ -39,18 +39,9 @@ module SouvlakiRS
     #
     # check that the path looks like an mp3 file
     def self.get_type_desc(file)
-      if File.exist?(file) && File.size(file) > 10
-        # checks if the type description contains 'MP3' or 'MPEG'
-        return FileMagic.new.file(file)
-      end
+      return FileMagic.new.file(file) if File.exist?(file) && File.size(file) > 10
 
       nil
-    end
-
-    #
-    # check if a file exists and delete it
-    def self.del_file(file)
-      FileUtils.rm(file) if File.exist? file
     end
 
     #

@@ -14,10 +14,8 @@ module SouvlakiRS
     GENRES = map_genres
 
     #
-    # retag a file fetched from web
-    def self.retag_file(file, opts)
-      tags = audio_file_read_tags(file)
-
+    # normalize the given tags according to the options
+    def self.normalize_tags(tags, opts)
       def_album = opts[:def_album]
       pub_date = opts[:pub_date]
 
@@ -48,9 +46,6 @@ module SouvlakiRS
 
       # and set year because, why not
       tags[:year] = pub_date.strftime('%Y').to_i
-
-      # write to file if needed
-      audio_file_write_tags(file, tags) if opts[:write_tags]
 
       tags
     end
@@ -109,8 +104,6 @@ module SouvlakiRS
         end
 
         tags[:length] = file.audio_properties.length_in_seconds if file.audio_properties
-
-        return tags
       end
 
       tags
@@ -126,12 +119,10 @@ module SouvlakiRS
     end
 
     #
-    # tag a file
+    # tag a file w/ id3v1 and id3v2 values
     def self.audio_file_write_tags(filepath, tags)
-      if tags[:genre]
-        genre = GENRES[tags[:genre]] # unless tags[:genre].nil?
-        SouvlakiRS.logger.info "Mapped genre '#{tags[:genre]}' => '#{genre}'"
-      end
+      genre = GENRES[tags[:genre]] unless tags[:genre].nil?
+      SouvlakiRS.logger.info "Mapping genre '#{tags[:genre]}' => '#{genre}'" if genre
 
       status = TagLib::MPEG::File.open(filepath) do |file|
         [file.id3v1_tag, file.id3v2_tag].each do |tag|

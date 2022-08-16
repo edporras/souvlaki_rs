@@ -8,8 +8,10 @@ module SouvlakiRS
     USER_AGENT = 'SouvlakiRS Notifier'
 
     class Comment
-      def initialize(msg_head)
-        creds = SouvlakiRS::Config.get_host_info(:basecamp)
+      attr_writer :msg_head
+
+      def initialize
+        creds = Config.get_host_info(:basecamp)
         raise 'Unable to load basecamp credentials' if creds.nil?
 
         @base_uri = creds[:base_uri]
@@ -20,7 +22,7 @@ module SouvlakiRS
         @password = creds[:password]
         @ua_email = creds[:ua_email]
 
-        @msg_head = msg_head
+        @msg_head = ''
         @text = []
       end
 
