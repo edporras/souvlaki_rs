@@ -19,6 +19,11 @@ module SouvlakiRS
   TMP_DIR_PATH = File.join(AIRTIME_CONFIG[:install_root], 'tmp')
 
   class Manager
+    def initialize(options)
+      @options = options
+      @bc = Basecamp::Comment.new if options[:post]
+    end
+
     # ------------------------------------------------------------------------
     # fetch the file pointed to by uri
     #
@@ -95,8 +100,34 @@ module SouvlakiRS
     end
 
     #
+    # register the text to post for the notification
+    def update_notifications(program, files)
+      files.each do
+        next unless program[:imported]
+
+        msg = program[:tags][:title]
+
+        # report warning if duration info is given and program's looks odd
+        if program.key?(:block)
+          block_len = program[:block]
+          min_len = block_len - (block_len / 5)
+          file_dur = program[:tags][:length] / 60.0
+
+          if file_dur >= block_len || file_dur < min_len
+            d_hms = Time.at(program[:tags][:length]).utc.strftime('%H:%M:%S')
+            msg << " (Length warning: #{d_hms})"
+            SouvlakiRS.logger.warn "File duration (#{d_hms}) - block is #{block_len}"
+          end
+        end
+
+        msg_id = program[:msg_id] if program.key?(:msg_id)
+        @bc.add_text(msg, msg_id)
+      end
+    end
+
+    #
     # this handles processing fetch the corresponding program's file(s)
-    def process_program(program, bc, options)
+    def process_program(program)
       SouvlakiRS.logger.info "Fetching #{program[:pub_title]} for #{program[:pub_date]}, source: #{program[:source]}"
 
       files = fetch_files(program)
@@ -116,7 +147,7 @@ module SouvlakiRS
                                   pub_date: program[:pub_date],
                                   rewrite_title: retitle)
 
-        if options[:write_tags]
+        if @options[:write_tags]
           Tag.audio_file_write_tags(file, tags)
         else
           SouvlakiRS.logger.info("Tags not rewritten. Read from file: Artist: '#{orig_tags[:artist]}', " \
@@ -124,7 +155,7 @@ module SouvlakiRS
         end
 
         # import to airtime
-        if options[:import]
+        if @options[:import]
           program[:imported] = Airtime.import(file)
           SouvlakiRS.logger.info "Airtime import '#{file}', status: #{program[:imported]}"
         else
@@ -138,54 +169,24 @@ module SouvlakiRS
       end
 
       # append to notification
-      if bc
-        bc.msg_head = "SRS v#{SouvlakiRS::VERSION} auto-import:"
+      update_notifications(program, files) if @bc
 
-        files.each do
-          next unless program[:imported]
-
-          msg = program[:tags][:title]
-
-          # report warning if duration info is given and program's looks odd
-          if program.key?(:block)
-            block_len = program[:block]
-            min_len = block_len - (block_len / 5)
-            file_dur = program[:tags][:length] / 60.0
-
-            if file_dur >= block_len || file_dur < min_len
-              d_hms = Time.at(program[:tags][:length]).utc.strftime('%H:%M:%S')
-              msg << " (Length warning: #{d_hms})"
-              SouvlakiRS.logger.warn "File duration (#{d_hms}) - block is #{block_len}"
-            end
-          end
-
-          bc.add_text msg
-        end
-      end
       true
     end
 
-    def process_codes(codes, options)
-      codes = valid_codes(codes)
-      program_configs = codes_to_configs(codes, options)
+    def process_codes(codes)
+      program_configs = codes_to_configs(valid_codes(codes))
+      program_configs.each { |program| process_program(program) }
 
-#      puts configs.group_by {|conf| conf[:msg_id]}
-      post = false
-      bc = Basecamp::Comment.new if options[:post]
-
-      program_configs.each do |program|
-        post |= process_program(program, bc, options)
-      end
-
-      bc.post if bc && post
+      @bc&.post
     end
 
     #
     # returns the list of validated and prepped program configs
-    def codes_to_configs(program_codes, options)
+    def codes_to_configs(program_codes)
       program_codes.map { |code| Config.get_program_info(code) }
                    .select { |prog| Program.valid?(prog) }
-                   .map { |prog| Program.prepare(prog, options) }
+                   .map { |prog| Program.prepare(prog, @options) }
     end
 
     #
