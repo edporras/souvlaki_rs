@@ -100,6 +100,44 @@ module SouvlakiRS
     end
 
     #
+    # retag the file
+    # - album is always set to program name (for consistency).
+    # - artist (creator) is set if none is in the file
+    def retag_file(program, file)
+      orig_tags = Tag.audio_file_read_tags(file)
+      if @options[:write_tags]
+        retitle = program[:retitle].nil? || program[:retitle] != false
+        tags = Tag.normalize_tags(orig_tags,
+                                  def_album: program[:name],
+                                  def_artist: program[:creator],
+                                  def_genre: program[:genre],
+                                  pub_date: program[:pub_date],
+                                  rewrite_title: retitle)
+
+        Tag.audio_file_write_tags(file, tags)
+        return tags
+      end
+
+      SouvlakiRS.logger.info("Tags not rewritten. Read from file: Artist: '#{orig_tags[:artist]}', " \
+                             "Album: '#{orig_tags[:album]}', Title: '#{orig_tags[:title]}'")
+      orig_tags
+    end
+
+    #
+    # import to libretime or fake it
+    def import_file(file)
+      if @options[:import]
+        status = Airtime.import(file)
+        SouvlakiRS.logger.info "Airtime import '#{file}', status: #{status}"
+        return status
+      end
+
+      SouvlakiRS.logger.warn "NOOP run - will not import #{file} - deleting"
+      FileUtils.rm_f(file)
+      true
+    end
+
+    #
     # register the text to post for the notification
     def update_notifications(program, files)
       files.each do
@@ -122,55 +160,27 @@ module SouvlakiRS
     #
     # this handles processing fetch the corresponding program's file(s)
     def process_program(program)
-      SouvlakiRS.logger.info "Fetching #{program[:pub_title]} for #{program[:pub_date]}, source: #{program[:source]}"
-
       files = fetch_files(program)
       return false if files.empty?
 
       # tag & import handling
       files.each do |file|
-        # retag:
-        # - album is always set to program name (for consistency).
-        # - artist (creator) is set if none is in the file
-        orig_tags = Tag.audio_file_read_tags(file)
-        retitle = program[:retitle].nil? || program[:retitle] != false
-        tags = Tag.normalize_tags(orig_tags,
-                                  def_album: program[:name],
-                                  def_artist: program[:creator],
-                                  def_genre: program[:genre],
-                                  pub_date: program[:pub_date],
-                                  rewrite_title: retitle)
-
-        if @options[:write_tags]
-          Tag.audio_file_write_tags(file, tags)
-        else
-          SouvlakiRS.logger.info("Tags not rewritten. Read from file: Artist: '#{orig_tags[:artist]}', " \
-                                 "Album: '#{orig_tags[:album]}', Title: '#{orig_tags[:title]}'")
-        end
-
-        # import to airtime
-        if @options[:import]
-          program[:imported] = Airtime.import(file)
-          SouvlakiRS.logger.info "Airtime import '#{file}', status: #{program[:imported]}"
-        else
-          SouvlakiRS.logger.warn "NOOP run - will not import #{file} - deleting"
-          FileUtils.rm_f(file)
-          program[:imported] = true
-        end
-
-        # save tags - TODO: only done for output. Rework to avoid this.
-        program[:tags] = tags
+        program[:tags] = retag_file(program, file)
+        program[:imported] = import_file(file)
       end
 
       # append to notification
       update_notifications(program, files) if @bc
-
-      true
     end
 
+    #
+    # process the list of parsed codes
     def process_codes(codes)
       program_configs = codes_to_configs(valid_codes(codes))
-      program_configs.each { |program| process_program(program) }
+      program_configs.each do |program|
+        SouvlakiRS.logger.info "Fetching #{program[:pub_title]} for #{program[:pub_date]}, source: #{program[:source]}"
+        process_program(program)
+      end
 
       @bc&.post
     end
