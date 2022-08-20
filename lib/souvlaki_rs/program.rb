@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require 'set'
-require_relative 'log'
-require_relative 'tag'
 
 module SouvlakiRS
   module Program
@@ -26,6 +24,19 @@ module SouvlakiRS
       end
 
       program
+    end
+
+    #
+    # return the dureation of the program based on fields set by tags
+    def self.file_duration(program)
+      return nil unless program.key?(:block)
+
+      block_len = program[:block]
+      file_dur = program[:tags][:length] / 60.0
+      min_len = block_len - (block_len / 5.0)
+      return nil unless file_dur >= block_len || file_dur < min_len
+
+      Time.at(program[:tags][:length]).utc.strftime('%H:%M:%S')
     end
 
     SOURCE_TYPES = Set.new(%i[file rss audioport])

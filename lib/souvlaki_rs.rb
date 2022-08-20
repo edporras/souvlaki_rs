@@ -108,16 +108,10 @@ module SouvlakiRS
         msg = program[:tags][:title]
 
         # report warning if duration info is given and program's looks odd
-        if program.key?(:block)
-          block_len = program[:block]
-          min_len = block_len - (block_len / 5)
-          file_dur = program[:tags][:length] / 60.0
-
-          if file_dur >= block_len || file_dur < min_len
-            d_hms = Time.at(program[:tags][:length]).utc.strftime('%H:%M:%S')
-            msg << " (Length warning: #{d_hms})"
-            SouvlakiRS.logger.warn "File duration (#{d_hms}) - block is #{block_len}"
-          end
+        d_hms = Program.file_duration(program)
+        if d_hms
+          msg << " (Length warning: #{d_hms})"
+          SouvlakiRS.logger.warn "File duration (#{d_hms}) - block is #{block_len}"
         end
 
         msg_id = program[:msg_id] if program.key?(:msg_id)
