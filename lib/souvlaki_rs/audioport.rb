@@ -28,54 +28,13 @@ module SouvlakiRS
       begin
         agent = init_agent
 
-        # go to the show's RSS feed
-        rss_uri = "/rss.php?series=#{show_name_uri}"
-        rss = agent.get(rss_uri)
-
-        SouvlakiRS.logger.info "fetched RSS feed from '#{rss_uri}', status code: #{agent.page.code.to_i}"
-
-        chan_pub_date = rss.search('//channel/pubDate').text
-        chan_pub_date = Time.parse(chan_pub_date).strftime(DATE_FORMAT)
-
-        if chan_pub_date > show_date
-          SouvlakiRS.logger.info " RSS pub date (#{chan_pub_date}) is more recent than requested date"
-          return files
-        end
-
-        SouvlakiRS.logger.info " RSS was last updated on #{chan_pub_date}"
-
-        last_item_date = rss.search('//item/pubDate').text
-        date = Time.parse(last_item_date).strftime(DATE_FORMAT)
-        if date != show_date
-          SouvlakiRS.logger.info "  item date #{date} does not match"
-          return files
-        end
+        rss, date = rss_shows_available(agent, show_name_uri, show_date)
+        return [] unless rss
 
         SouvlakiRS.logger.info "date match (#{date})"
 
-        mp3_url = rss.search('//item/enclosure').attribute('url').value
-        url = URI.parse(mp3_url)
-        filename = File.basename(url.path)
-
-        SouvlakiRS.logger.info "starting download for #{mp3_url}"
-
-        # fetch the data
-        data = agent.get(mp3_url)
-        if data
-          dest_file = File.join(tmp_dir, filename)
-
-          # delete if it exists
-          FileUtils.rm_f(dest_file)
-
-          data.save_as(dest_file)
-
-          SouvlakiRS.logger.info "File saved: #{dest_file}"
-
-          # either downloaded it or file was there already
-          files << dest_file
-        else
-          SouvlakiRS.logger.error 'download failed'
-        end
+        rslt = from_rss(agent, rss, tmp_dir)
+        files << rslt unless rslt.nil?
       rescue StandardError => e
         SouvlakiRS.logger.error "Error when fetching \"#{show_name}\": #{e}"
       end
@@ -89,6 +48,20 @@ module SouvlakiRS
     end
 
     private
+
+    #
+    # fetch the file using the RSS
+    def from_rss(agent, rss, tmp_dir)
+      mp3_url = rss.search('//item/enclosure').attribute('url').value
+
+      SouvlakiRS.logger.info "starting download for #{mp3_url}"
+
+      url = URI.parse(mp3_url)
+      dest_file = File.join(tmp_dir, File.basename(url.path))
+      return dest_file if save_to_disk(download_file(agent, mp3_url), dest_file)
+
+      nil
+    end
 
     # ====================================================================
     # returns the audioport spider agent instance, initializing it and
@@ -151,6 +124,57 @@ module SouvlakiRS
       return tmp_dir_path if name.nil?
 
       File.join(tmp_dir_path, name)
+    end
+
+    def to_date(node)
+      Time.parse(node.text).strftime(DATE_FORMAT)
+    end
+
+    #
+    # checks the RSS to see if a program is available for the given date
+    def rss_shows_available(agent, show_name_uri, show_date)
+      # go to the show's RSS feed
+      rss_uri = "/rss.php?series=#{show_name_uri}"
+      rss = agent.get(rss_uri)
+
+      SouvlakiRS.logger.info "fetched RSS feed from '#{rss_uri}', status code: #{agent.page.code.to_i}"
+
+      chan_pub_date = to_date(rss.search('//channel/pubDate'))
+
+      if chan_pub_date > show_date
+        SouvlakiRS.logger.info " RSS pub date (#{chan_pub_date}) is more recent than requested date"
+        return nil
+      end
+
+      SouvlakiRS.logger.info " RSS was last updated on #{chan_pub_date}"
+
+      date = to_date(rss.search('//item/pubDate'))
+      if date != show_date
+        SouvlakiRS.logger.info "  item date #{date} does not match"
+        return nil
+      end
+
+      [rss, date]
+    end
+
+    def download_file(agent, url)
+      data = agent.get(url)
+      unless data
+        SouvlakiRS.logger.error 'download failed'
+        return nil
+      end
+
+      data
+    end
+
+    def save_to_disk(data, dest_file)
+      return false if data.nil?
+
+      FileUtils.rm_f(dest_file) # in case we wrote and aborted previously
+      data.save_as(dest_file)
+
+      SouvlakiRS.logger.info "File saved: #{dest_file}"
+      true
     end
   end
 end
