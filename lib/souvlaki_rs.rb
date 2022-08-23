@@ -15,20 +15,22 @@ require 'version'
 #
 # SouvlakiRS module
 module SouvlakiRS
-  AIRTIME_CONFIG = Config.get_host_info(:libretime)
-  TMP_DIR_PATH = File.join(AIRTIME_CONFIG[:install_root], 'tmp')
-
   class Manager
+    attr_reader :bc2, :config, :audioport, :airtime, :tmp_dir_path
+
     def initialize(options)
       @options = options
-      @bc = Basecamp::Comment.new if options[:post]
+      @config = Config.new(options[:config])
+      @airtime = Airtime.new(@config.get_host_info(:libretime))
+      @bc2 = Basecamp2.new(@config.get_host_info(:basecamp)) if options[:post]
+      @audioport = Audioport.new(@config.get_host_info(:audioport), File.join(@airtime.install_root, 'tmp'))
     end
 
     # ------------------------------------------------------------------------
     # fetch the file pointed to by uri
     #
     def remote_file_download(program)
-      show_dir = Util.get_show_path(program[:pub_title])
+      show_dir = get_program_path(program[:pub_title])
 
       # determine a file destination and ensure the directory exists
       Util.check_destination(show_dir)
@@ -50,12 +52,8 @@ module SouvlakiRS
     # date. Post notification on basecamp
     #
     def audioport_download(program)
-      # ensure the destination directory exists
-      show_dir = Util.get_show_path(program[:pub_title])
-      Util.check_destination(show_dir)
-
       # spider audioport and download any files we find that match the date
-      files = Audioport.fetch_files(program[:pub_title], program[:pub_date], program[:show_name_uri])
+      files = audioport.fetch_files(program[:pub_title], program[:pub_date], program[:show_name_uri])
 
       if files.nil? || files.empty?
         SouvlakiRS.logger.warn "Unable to download '#{program[:pub_title]}' dated #{program[:pub_date]} from Audioport"
@@ -127,7 +125,7 @@ module SouvlakiRS
     # import to libretime or fake it
     def import_file(file)
       if @options[:import]
-        status = Airtime.import(file)
+        status = airtime.import(file)
         SouvlakiRS.logger.info "Airtime import '#{file}', status: #{status}"
         return status
       end
@@ -153,7 +151,7 @@ module SouvlakiRS
         end
 
         msg_id = program[:msg_id] if program.key?(:msg_id)
-        @bc.add_text(msg, msg_id)
+        bc2.add_text(msg, msg_id)
       end
     end
 
@@ -170,7 +168,7 @@ module SouvlakiRS
       end
 
       # append to notification
-      update_notifications(program, files) if @bc
+      update_notifications(program, files) if bc2
     end
 
     #
@@ -182,13 +180,13 @@ module SouvlakiRS
         process_program(program)
       end
 
-      @bc&.post
+      bc2&.post_comment
     end
 
     #
     # returns the list of validated and prepped program configs
     def codes_to_configs(program_codes)
-      program_codes.map { |code| Config.get_program_info(code) }
+      program_codes.map { |code| config.get_program_info(code) }
                    .select { |prog| Program.valid?(prog) }
                    .map { |prog| Program.prepare(prog, @options) }
     end
@@ -196,13 +194,19 @@ module SouvlakiRS
     #
     # returns the list of valid codes (initial check to validate arguments)
     def valid_codes(codes)
-      program_codes = Config.get_program_info
+      program_codes = config.get_program_info
       checked_codes = codes.uniq.map(&:to_sym).group_by { |c| program_codes.key?(c) ? :ok : :unknown }
 
       SouvlakiRS.logger.warn("Skipping unrecognized codes #{checked_codes[:unknown]}") unless
         checked_codes[:unknown].nil?
 
       checked_codes[:ok]
+    end
+
+    #
+    # joins libretime's install path with a subfolder for copying files to
+    def get_program_path(name)
+      File.join(airtime.install_root, name)
     end
   end
 end

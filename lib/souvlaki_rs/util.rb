@@ -8,20 +8,6 @@ module SouvlakiRS
   # utilities
   module Util
     #
-    # joins libretime's install path with a subfolder for copying files to
-    def self.get_show_path(name)
-      File.join(AIRTIME_CONFIG[:install_root], name)
-    end
-
-    #
-    # tmp file
-    def self.get_tmp_path(name = nil)
-      return TMP_DIR_PATH if name.nil?
-
-      File.join(TMP_DIR_PATH, name)
-    end
-
-    #
     # ensure dest directory exists TODO: check
     def self.check_destination(path, _opts = {})
       unless Dir.exist?(path)

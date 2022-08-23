@@ -8,6 +8,8 @@ require 'souvlaki_rs'
 
 # This hash will hold all of the options parsed from the command-line
 options = {}
+list_program_codes = false
+
 optparse = OptionParser.new do |opts|
   opts.banner = "Usage: #{$PROGRAM_NAME} [options] program_code"
 
@@ -42,14 +44,18 @@ optparse = OptionParser.new do |opts|
     end
   end
 
+  options[:config] = File.join(Dir.home, '.souvlaki_rs')
+  opts.on('-c', '--config PATH', 'Path to config file.') do |path|
+    options[:config] = path
+  end
+
   options[:verbose] = false
   opts.on('-v', '--verbose', 'Logs info messages in addition to warn and errors.') do
     options[:verbose] = true
   end
 
   opts.on('-l', '--list_program_codes', 'Display list of program codes to pass as the argument.') do
-    SouvlakiRS::Config.list_program_codes
-    exit
+    list_program_codes = true
   end
 
   opts.on('-h', '--help', 'Display this screen') do
@@ -59,18 +65,29 @@ optparse = OptionParser.new do |opts|
 end
 optparse.parse!
 
+unless File.exist?(options[:config])
+  warn "Configuration file '#{options[:config]}' not found. See config.example and set up for your needs."
+  exit
+end
+
 # arg check
-if ARGV.empty?
+if ARGV.empty? && !list_program_codes
   warn optparse
   exit 1
 end
 
 # it all starts here
+options[:req_date] = options[:date] ? options[:date] : Date.today
+srs = SouvlakiRS::Manager.new(options)
+
+if list_program_codes
+  srs.config.list_program_codes
+  exit
+end
+
 #
 SouvlakiRS.logger.verbose(options[:verbose])
 SouvlakiRS.logger.info "#{$PROGRAM_NAME} - using SouvlakiRS v#{SouvlakiRS::VERSION}"
 SouvlakiRS.logger.info "Running fetcher on #{Date.today} with code list: #{ARGV.join(' ')}"
 
-options[:req_date] = options[:date] ? options[:date] : Date.today
-srs = SouvlakiRS::Manager.new(options)
 srs.process_codes(ARGV)
