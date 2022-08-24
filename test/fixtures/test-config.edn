@@ -1,0 +1,41 @@
+{:system
+ {:sender "me@some.com"}
+ :audioport
+ {:base_uri "http://audioport.org/index.php"
+  :username "audioport-user"
+  :password "audioport-passwd"}
+ :basecamp
+ {:base_uri "https://basecamp.com"
+  :username "me@some.com"
+  :password "xx"
+  :id       "11"   ; WGOT basecamp id (shouldn't be changed)
+  :project  "22"  ; testing project
+  :msg_id   "33" ; discussion id
+  ;; email to include in user-agent string
+  :ua_email "me@some.com"}
+ :libretime
+ {:base_uri "http://localhost:2201"
+  :api_key "yy"
+  :install_root "tmp"}
+ :programs
+ {:tp1   {:pub_title "Title 1"
+          :creator   "Creator 1"
+          :name      "Name 1"
+          :source    :rss
+          :feed      "http://1"
+          :block     60
+          :genre     :world_music}
+  :tp2   {:pub_title "Title 2"
+          :creator   "Creator 2"
+          :name      "Name 2"
+          :source    :audioport
+          :block     30
+          :genre     :dance}
+  :tp3   {:pub_title "Title 3"
+          :creator   "Creator 3"
+          :name      "Name 3"
+          :source     :file
+          :base_url   "https://3"
+          :format     "%m%d%y.mp3"
+          :block      30
+          :genre     :speech}}}
