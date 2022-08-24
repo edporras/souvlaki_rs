@@ -7,33 +7,37 @@ Gem::Specification.new do |s|
   s.version            = SouvlakiRS::VERSION
   s.platform           = Gem::Platform::RUBY
 
-  s.required_ruby_version = '>= 2.7.0'
+  s.required_ruby_version = '>= 3.1.0'
   s.required_rubygems_version = Gem::Requirement.new('>= 0') if s.respond_to? :required_rubygems_version=
+  s.metadata = { 'rubygems_mfa_required' => 'true' }
 
   s.authors = ['Ed Porras']
   s.email = 'technical@wgot.org'
-  s.date = SouvlakiRS::RELEASE_DATE
   s.summary = "Tools for managing WGOT-LP's syndicated fetching and import"
-  s.description = 'Scripts for managing auto fech of files and dropbox import'
   s.license = 'MIT'
 
   s.files = `git ls-files`.split("\n")
-                          .reject { |f| f =~ /\.gem/ }
-                          .reject { |f| f =~ /\.txt/ }
-                          .reject { |f| f =~ /\.edn/ }
+                          .grep_v('.gem')
+                          .grep_v('.txt')
+                          .grep_v('.edn')
 
   s.executables = %w[srs_fetch]
   s.homepage = 'http://rubygems.org/gems/souvlaki_rs'
   s.require_paths = ['lib']
-  s.rubygems_version = '1.6.2'
 
   s.add_dependency('edn', '~> 1.1')
-  s.add_dependency('mail', '~> 2.6')
-  s.add_dependency('mechanize', '~> 2.7')
+  s.add_dependency('mail', '~> 2.7')
+  s.add_dependency('mechanize', '~> 2.8')
+  s.add_dependency('net-smtp', '~> 0.3')
+  s.add_dependency('rss', '~> 0.2')
+  s.add_dependency('ruby-filemagic', '~> 0.7')
   s.add_dependency('syslogger', '~> 1.6')
   s.add_dependency('taglib-ruby', '~> 1.1')
 
+  s.add_development_dependency('bundler', '>= 1.3')
+  s.add_development_dependency('pry-byebug', '~> 3.10')
+  s.add_development_dependency('rake', '~> 13.0')
   s.add_development_dependency('rubocop', '~> 1.31')
-
-  s.specification_version = 3 if s.respond_to? :specification_version
+  s.add_development_dependency('shoulda-context', '~> 2.0')
+  s.add_development_dependency('test-unit', '~> 3.5')
 end
