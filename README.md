@@ -29,10 +29,24 @@ The name is based on the wonderful song by Slowdive from their
 
 ## Installation
 
+Clone the repo:
+
+```sh
+git clone https://github.com/edporras/souvlaki_rs.git
+```
+
+Install the taglib dependency:
+
+```sh
+sudo apt-get install libtag1-dev
+```
+
+Setup the libretime import script:
+
 ```sh
 sudo mkdir /srv/airtime/bin
 sudo cp bin/libretime-import /srv/airtime/bin
-sudo chown -R www-data:www-data /srv/airtime/bin
+sudo chown -R www-data:www-data /srv/airtime/bin/libretime-import
 ```
 
 You can add the bin folder to your path so you can easily find the
