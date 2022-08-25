@@ -18,17 +18,17 @@ module SouvlakiRS
     # ====================================================================
     # spider audioport to fetch the most recent entry for a given
     # program and return its mp3 if it matches the date
-    def fetch_files(show_name, date, show_name_uri)
+    def fetch_files(program)
       tmp_dir = get_tmp_path('audioport')
-      show_date = date.strftime(DATE_FORMAT)
+      show_date = program[:pub_date].strftime(DATE_FORMAT)
       files = []
 
-      SouvlakiRS.logger.info "Audioport fetch for '#{show_name}', date: #{show_date}"
+      SouvlakiRS.logger.info "Audioport fetch for '#{program[:pub_title]}', date: #{show_date}"
 
       begin
         agent = init_agent
 
-        rss, date = rss_shows_available(agent, show_name_uri, show_date)
+        rss, date = rss_shows_available(agent, program[:show_name_uri], show_date)
         return [] unless rss
 
         SouvlakiRS.logger.info "date match (#{date})"
@@ -36,7 +36,7 @@ module SouvlakiRS
         rslt = from_rss(agent, rss, tmp_dir)
         files << rslt unless rslt.nil?
       rescue StandardError => e
-        SouvlakiRS.logger.error "Error when fetching \"#{show_name}\": #{e}"
+        SouvlakiRS.logger.error "Fetch error: #{e}"
       end
 
       # logout

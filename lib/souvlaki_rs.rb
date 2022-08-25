@@ -53,7 +53,7 @@ module SouvlakiRS
     #
     def audioport_download(program)
       # spider audioport and download any files we find that match the date
-      files = audioport.fetch_files(program[:pub_title], program[:pub_date], program[:show_name_uri])
+      files = audioport.fetch_files(program)
 
       if files.nil? || files.empty?
         SouvlakiRS.logger.warn "Unable to download '#{program[:pub_title]}' dated #{program[:pub_date]} from Audioport"
