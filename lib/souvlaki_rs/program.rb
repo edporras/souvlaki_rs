@@ -16,11 +16,9 @@ module SouvlakiRS
 
       case program[:source]
       when :file
-        file_url = program[:base_url].dup
-        file_url << "/#{program[:pub_date].strftime(program[:format])}" if program[:format]
+        file_url = program[:base_url]
+        file_url += "/#{program[:pub_date].strftime(program[:format])}" if program[:format]
         program[:file_url] = file_url
-      when :audioport
-        program[:show_name_uri] = program[:ap_uri] || program[:pub_title].tr(' ', '+')
       end
 
       program

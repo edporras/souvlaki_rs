@@ -32,19 +32,12 @@ module SouvlakiRS
     def remote_file_download(program)
       show_dir = get_program_path(program[:pub_title])
 
-      # determine a file destination and ensure the directory exists
-      Util.check_destination(show_dir)
-
       # try to download
       mp3_dest = File.join(show_dir, File.basename(program[:file_url]))
-      if Fetch.fetch_file(program[:file_url], mp3_dest)
-        files = []
-        files << mp3_dest
-        return files
-      end
+      return mp3_dest if Fetch.fetch_file(program[:file_url], mp3_dest)
 
-      SouvlakiRS.logger.error "Unable to download '#{program[:pub_title]}' from #{program[:file_url]}"
-      []
+      SouvlakiRS.logger.error " Unable to download '#{program[:pub_title]}' from #{program[:file_url]}"
+      nil
     end
 
     # ------------------------------------------------------------------------
@@ -54,11 +47,7 @@ module SouvlakiRS
     def audioport_download(program)
       # spider audioport and download any files we find that match the date
       files = audioport.fetch_files(program)
-
-      if files.nil? || files.empty?
-        SouvlakiRS.logger.warn "Unable to download '#{program[:pub_title]}' dated #{program[:pub_date]} from Audioport"
-        return []
-      end
+      SouvlakiRS.logger.warn "Unable to download '#{program[:pub_title]}' dated #{program[:pub_date]}" if files.empty?
 
       files
     end
@@ -77,9 +66,13 @@ module SouvlakiRS
         return []
       end
 
-      # we have the uri and the destination - fetch the audio file
       program[:file_url] = mp3_uri
-      remote_file_download(program)
+      program[:origin] = program[:feed]
+
+      # we have the uri and the destination - fetch the audio file
+      files = []
+      files << remote_file_download(program)
+      files
     end
 
     #
@@ -87,7 +80,7 @@ module SouvlakiRS
     def fetch_files(program)
       case program[:source]
       when :file
-        remote_file_download(program)
+        [remote_file_download(program)]
       when :audioport
         audioport_download(program)
       when :rss
@@ -141,7 +134,9 @@ module SouvlakiRS
       files.each do
         next unless program[:imported]
 
-        msg = program[:tags][:title]
+        msg_code = program[:code]
+        msg_code = "<a href=\"#{program[:origin]}\">#{msg_code}</a>" if program[:origin]
+        msg = "<strong>#{msg_code}</strong>: #{program[:tags][:title]}"
 
         # report warning if duration info is given and program's looks odd
         d_hms = Program.file_duration(program)
@@ -206,7 +201,9 @@ module SouvlakiRS
     #
     # joins libretime's install path with a subfolder for copying files to
     def get_program_path(name)
-      File.join(airtime.install_root, name)
+      path = File.join(airtime.install_root, 'tmp', name)
+      Util.check_destination(path)
+      path
     end
   end
 end

@@ -29,11 +29,6 @@ module SouvlakiRS
         prog = Program.prepare({ base_url: 'http://www', pub_date: @thedate, format: '%Y%m%d', source: :file }, @options)
         assert_equal 'http://www/20221130', prog[:file_url]
       end
-
-      should 'add :show_name_url to :audioport programs' do
-        prog = Program.prepare({ pub_title: 'A Test', source: :audioport }, @options)
-        assert_equal 'A+Test', prog[:show_name_uri]
-      end
     end
 
     context 'determine file_duration' do
