@@ -19,15 +19,15 @@ module SouvlakiRS
     # spider audioport to fetch the most recent entry for a given
     # program and return its mp3 if it matches the date
     def fetch_files(program)
-      show_date = program[:pub_date].strftime(DATE_FORMAT)
+      program = init_fields(program)
       files = []
 
-      SouvlakiRS.logger.info "Audioport fetch for '#{program[:pub_title]}', date: #{show_date}, use html? #{program[:use_html]}"
+      SouvlakiRS.logger.info "Audioport fetch: '#{program[:pub_title]}', date: #{program[:show_date]}, " \
+                             "use html? #{program[:use_html]}"
 
       begin
         agent = init_agent
-
-        rss, date = rss_shows_available(agent, program[:show_name_uri], show_date)
+        rss, date = rss_shows_available(agent, program[:show_name_uri], program[:show_date])
         return [] unless rss
 
         SouvlakiRS.logger.info " date match (#{date})"
@@ -47,6 +47,15 @@ module SouvlakiRS
 
     private
 
+    def init_fields(program)
+      program[:show_name_uri] = program[:ap_uri] || program[:pub_title].tr(' ', '+')
+      program[:show_date] = program[:pub_date].strftime(DATE_FORMAT)
+      program[:use_html] |= false
+      program[:uri] = "/index.php?op=series&series=#{program[:show_name_uri]}"
+      program[:origin] = "#{config[:base_uri]}/#{program[:uri]}"
+      program
+    end
+
     #
     # fetch the file using the RSS
     def from_rss(agent, rss)
@@ -63,10 +72,8 @@ module SouvlakiRS
     #
     # fetch the files using the HTML page
     def from_html(agent, program)
-      page_uri = "/index.php?op=series&series=#{program[:show_name_uri]}"
-      page = agent.get(page_uri)
-
-      SouvlakiRS.logger.info "fetched HTML feed from '#{page_uri}', status code: #{agent.page.code.to_i}"
+      page = agent.get(program[:uri])
+      SouvlakiRS.logger.info "fetched HTML feed from '#{program[:uri]}', status code: #{agent.page.code.to_i}"
 
       num_matches = html_page_dates(page).select { |d| d.eql? program[:pub_date].to_s }.size
 
