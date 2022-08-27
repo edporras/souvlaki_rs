@@ -18,7 +18,7 @@ module SouvlakiRS
         # file hasn't been fetched
         begin
           case io = OpenURI.open_uri(uri)
-          when StringIO then File.open(dest, 'w') { |f| f.write(io.read) }
+          when StringIO then File.write(dest, io.read)
           when Tempfile
             begin
               io.close
@@ -39,6 +39,12 @@ module SouvlakiRS
         end
       end
 
+      valid = valid?(dest)
+      FileUtils.rm_f(dest) unless valid
+      valid
+    end
+
+    def self.valid?(dest)
       # check to see if it looks like an MP3
       unless File.exist?(dest)
         SouvlakiRS.logger.error "File \"#{dest}\" download failed"
@@ -58,7 +64,6 @@ module SouvlakiRS
       end
 
       SouvlakiRS.logger.error "File \"#{dest}\" does not look to be an MPEG audio file (#{desc})"
-      FileUtils.rm_f(dest)
       false
     end
 
