@@ -7,11 +7,11 @@ module SouvlakiRS
   #
   # scraping AudioPort.org
   class Audioport
-    attr_reader :config, :tmp_dir_path
+    attr_reader :config, :tmp_dir
 
     def initialize(config, tmp_dir_path)
       @config = config
-      @tmp_dir_path = tmp_dir_path
+      @tmp_dir = File.join(tmp_dir_path, 'audioport')
     end
 
     DATE_FORMAT = '%Y-%m-%d' # audioport date format
@@ -19,11 +19,10 @@ module SouvlakiRS
     # spider audioport to fetch the most recent entry for a given
     # program and return its mp3 if it matches the date
     def fetch_files(program)
-      tmp_dir = get_tmp_path('audioport')
       show_date = program[:pub_date].strftime(DATE_FORMAT)
       files = []
 
-      SouvlakiRS.logger.info "Audioport fetch for '#{program[:pub_title]}', date: #{show_date}"
+      SouvlakiRS.logger.info "Audioport fetch for '#{program[:pub_title]}', date: #{show_date}, use html? #{program[:use_html]}"
 
       begin
         agent = init_agent
@@ -31,12 +30,11 @@ module SouvlakiRS
         rss, date = rss_shows_available(agent, program[:show_name_uri], show_date)
         return [] unless rss
 
-        SouvlakiRS.logger.info "date match (#{date})"
+        SouvlakiRS.logger.info " date match (#{date})"
 
-        rslt = from_rss(agent, rss, tmp_dir)
-        files << rslt unless rslt.nil?
+        files += program[:use_html] ? from_html(agent, program) : from_rss(agent, rss)
       rescue StandardError => e
-        SouvlakiRS.logger.error "Fetch error: #{e}"
+        SouvlakiRS.logger.error "  Fetch error: #{e}"
       end
 
       # logout
@@ -51,27 +49,73 @@ module SouvlakiRS
 
     #
     # fetch the file using the RSS
-    def from_rss(agent, rss, tmp_dir)
+    def from_rss(agent, rss)
       mp3_url = rss.search('//item/enclosure').attribute('url').value
 
-      SouvlakiRS.logger.info "starting download for #{mp3_url}"
+      files = []
+      data, filename = download_file(agent, mp3_url)
+      dest_file = save_to_disk(data, filename)
+      files << dest_file if dest_file
 
-      url = URI.parse(mp3_url)
-      dest_file = File.join(tmp_dir, File.basename(url.path))
-      return dest_file if save_to_disk(download_file(agent, mp3_url), dest_file)
+      files
+    end
 
-      nil
+    #
+    # fetch the files using the HTML page
+    def from_html(agent, program)
+      page_uri = "/index.php?op=series&series=#{program[:show_name_uri]}"
+      page = agent.get(page_uri)
+
+      SouvlakiRS.logger.info "fetched HTML feed from '#{page_uri}', status code: #{agent.page.code.to_i}"
+
+      num_matches = html_page_dates(page).select { |d| d.eql? program[:pub_date].to_s }.size
+
+      SouvlakiRS.logger.info " found #{num_matches} matches"
+
+      files = []
+      html_page_download_urls(page, num_matches).each do |download_page|
+        page = agent.get(download_page)
+
+        mp3_url = html_page_download_href(page)
+        data, filename = download_file(agent, mp3_url)
+        dest_file = save_to_disk(data, filename)
+        files << dest_file if dest_file
+      end
+
+      files
+    end
+
+    #
+    # page.xpath('//table[@id="content"]//tr[@class="boxSeparateA" or @class="boxSeparateB"]/td')
+    #     .each_slice(5).map{|td_list| td_list[3].text.gsub(/[[:space:]]/, '')}
+    def html_page_dates(page)
+      page.xpath('//table[@id="content"]//tr[@class="boxSeparateA" or @class="boxSeparateB"]/td')
+          .each_slice(5)
+          .map { |td_list| td_list[3] }
+          .take(4)
+          .map { |date_str| to_date(date_str) }
+    end
+
+    #
+    # page.xpath('//table[@id="content"]//tr[@class="boxSeparateA" or @class="boxSeparateB"]/td/a/@href')
+    #     .map {|link| link.value}.select {|link| !link.include? "producer-info"}
+    def html_page_download_urls(page, count)
+      page.xpath('//table[@id="content"]//tr[@class="boxSeparateA" or @class="boxSeparateB"]/td/a/@href')
+          .map(&:value)
+          .reject { |link| link.include? 'producer-info' }
+          .take(count)
+    end
+
+    def html_page_download_href(page)
+      page.xpath("//td[@class='boxContentInfo']//img[@src='/resources/images/icon-download-on.gif']/parent::a")
+          .attr('href').value
     end
 
     # ====================================================================
     # returns the audioport spider agent instance, initializing it and
     # login in when invoked for the first time
     def init_agent
-      agent = make_spider
-
-      # initialize and log in
-      login(agent)
-
+      agent = login(make_spider)
       unless agent.page.content.include? 'You are logged in.'
         SouvlakiRS.logger.error 'Audioport user login failed'
         raise 'Mechanize failed to create agent' if agent.nil?
@@ -89,7 +133,7 @@ module SouvlakiRS
         agent.keep_alive = true
         agent.open_timeout = 30
         agent.read_timeout = 30
-        # agent.pluggable_parser['audio/mpeg'] = Mechanize::DirectorySaver.save_to(SouvlakiRS::Util.get_tmp_path)
+        agent.pluggable_parser['audio/mpeg'] = Mechanize::Download
       end
     end
 
@@ -105,6 +149,8 @@ module SouvlakiRS
         f.email    = config[:username]
         f.password = config[:password]
       end.submit
+
+      agent
     end
 
     # def logged_in?(agent)
@@ -118,16 +164,8 @@ module SouvlakiRS
     #   logout_btn&.click
     # end
 
-    #
-    # tmp file
-    def get_tmp_path(name = nil)
-      return tmp_dir_path if name.nil?
-
-      File.join(tmp_dir_path, name)
-    end
-
     def to_date(node)
-      Time.parse(node.text).strftime(DATE_FORMAT)
+      Time.parse(node).strftime(DATE_FORMAT)
     end
 
     #
@@ -139,8 +177,7 @@ module SouvlakiRS
 
       SouvlakiRS.logger.info "fetched RSS feed from '#{rss_uri}', status code: #{agent.page.code.to_i}"
 
-      chan_pub_date = to_date(rss.search('//channel/pubDate'))
-
+      chan_pub_date = to_date(rss.search('//channel/pubDate').text)
       if chan_pub_date > show_date
         SouvlakiRS.logger.info " RSS pub date (#{chan_pub_date}) is more recent than requested date"
         return nil
@@ -148,7 +185,7 @@ module SouvlakiRS
 
       SouvlakiRS.logger.info " RSS was last updated on #{chan_pub_date}"
 
-      date = to_date(rss.search('//item/pubDate'))
+      date = to_date(rss.search('//item/pubDate').text)
       if date != show_date
         SouvlakiRS.logger.info "  item date #{date} does not match"
         return nil
@@ -157,24 +194,47 @@ module SouvlakiRS
       [rss, date]
     end
 
+    #
+    # fetch the file pointed to by url
     def download_file(agent, url)
+      SouvlakiRS.logger.info " starting download for #{url}"
+
       data = agent.get(url)
       unless data
-        SouvlakiRS.logger.error 'download failed'
+        SouvlakiRS.logger.error '  download failed'
         return nil
       end
 
-      data
+      filename = get_response_filename(data) || filename_from_url(url)
+      [data, filename]
     end
 
-    def save_to_disk(data, dest_file)
-      return false if data.nil?
+    #
+    # extract it from content-disposition header
+    def get_response_filename(data)
+      cnt_dispo = data.header['content-disposition']
+      m = /^attachment;(\s*)filename=(.*);/.match(cnt_dispo)
+      return m[2] unless m.nil?
 
+      nil
+    end
+
+    #
+    # fallback to extract from the mp3's url.. might not be ideal
+    def filename_from_url(mp3_url)
+      File.basename(URI.parse(mp3_url).path)
+    end
+
+    #
+    # writes the data blob to the given path components
+    def save_to_disk(data, filename)
+      return nil if data.nil?
+
+      dest_file = File.join(tmp_dir, filename)
       FileUtils.rm_f(dest_file) # in case we wrote and aborted previously
       data.save_as(dest_file)
-
-      SouvlakiRS.logger.info "File saved: #{dest_file}"
-      true
+      SouvlakiRS.logger.info " File saved: #{dest_file}"
+      dest_file
     end
   end
 end

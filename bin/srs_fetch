@@ -81,7 +81,9 @@ options[:req_date] = options[:date] ? options[:date] : Date.today
 srs = SouvlakiRS::Manager.new(options)
 
 if list_program_codes
-  srs.config.list_program_codes
+  puts 'Configured code List:'
+  srs.config.get_program_info.each_pair { |code, data| puts " #{code}\t-\t'#{data[:pub_title]}'" }
+
   exit
 end
 
