@@ -13,7 +13,7 @@ module SouvlakiRS
       if File.exist?(dest)
         SouvlakiRS.logger.info " File #{dest} already downloaded"
       else
-        SouvlakiRS.logger.info " Fetched \"#{uri}\""
+        SouvlakiRS.logger.info " Trying to fetch \"#{uri}\""
         # file hasn't been fetched
         begin
           case io = OpenURI.open_uri(uri)
@@ -24,8 +24,10 @@ module SouvlakiRS
               FileUtils.mv(io.path, dest)
             end
           end
+          SouvlakiRS.logger.info " Wrote to #{dest}"
         rescue OpenURI::HTTPError => e
           SouvlakiRS.logger.error "  Read error: (#{e.io.status[1]})"
+          return false
         rescue Timeout::Error => e
           SouvlakiRS.logger.error "  Connection timeout error: #{e.io.status[1]}"
           if File.exist(dest)
@@ -40,8 +42,6 @@ module SouvlakiRS
 
       valid = valid?(dest)
       FileUtils.rm_f(dest) unless valid
-
-      SouvlakiRS.logger.info " Wrote to #{dest}"
       valid
     end
 
@@ -79,7 +79,7 @@ module SouvlakiRS
         return nil
       end
 
-      SouvlakiRS.logger.info " Fetching file from #{f.feed_type} feed at #{uri}"
+      SouvlakiRS.logger.info " Trying to fetch file from '#{f.feed_type}' feed at #{uri}"
 
       # try to parse it w/ standard ruby RSS
       case f.feed_type

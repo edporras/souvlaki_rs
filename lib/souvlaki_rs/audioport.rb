@@ -22,8 +22,7 @@ module SouvlakiRS
       program = init_fields(program)
       files = []
 
-      SouvlakiRS.logger.info "Audioport fetch: '#{program[:pub_title]}', date: #{program[:show_date]}, " \
-                             "use html? #{program[:use_html]}"
+      SouvlakiRS.logger.info " Trying to fetch: '#{program[:pub_title]}', use html? #{program[:use_html]}"
 
       begin
         agent = init_agent

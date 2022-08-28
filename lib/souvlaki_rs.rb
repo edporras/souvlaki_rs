@@ -80,7 +80,10 @@ module SouvlakiRS
     def fetch_files(program)
       case program[:source]
       when :file
-        [remote_file_download(program)]
+        files = []
+        f = remote_file_download(program)
+        files << f unless f.nil?
+        files
       when :audioport
         audioport_download(program)
       when :rss
@@ -171,7 +174,7 @@ module SouvlakiRS
     def process_codes(codes)
       program_configs = codes_to_configs(valid_codes(codes))
       program_configs.each do |program|
-        SouvlakiRS.logger.info "Fetching #{program[:pub_title]} for #{program[:pub_date]}, source: #{program[:source]}"
+        SouvlakiRS.logger.info "Request for #{program[:pub_title]} dated #{program[:pub_date]}, source: #{program[:source]}"
         process_program(program)
       end
 
