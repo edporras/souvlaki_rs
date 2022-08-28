@@ -31,12 +31,6 @@ module SouvlakiRS
       info
     end
 
-    def list_program_codes
-      pc = get_program_info
-      puts 'Configured code List:'
-      pc.each_pair { |code, data| puts " #{code}\t-\t'#{data[:pub_title]}'" }
-    end
-
     private
 
     def get_entry(entry)
