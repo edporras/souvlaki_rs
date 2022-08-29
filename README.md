@@ -57,5 +57,5 @@ build and install a local gem:
 gem install bundler
 bundle install
 gem build souvlaki_rs
-gem install souvlaki_rs-0.12.1.gem
+gem install souvlaki_rs-0.12.2.gem
 ```
