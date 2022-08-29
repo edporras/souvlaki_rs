@@ -29,16 +29,16 @@ The name is based on the wonderful song by Slowdive from their
 
 ## Installation
 
-Clone the repo:
-
-```sh
-git clone https://github.com/edporras/souvlaki_rs.git
-```
-
 Install the taglib dependency:
 
 ```sh
 sudo apt-get install libtag1-dev
+```
+
+Clone the repo:
+
+```sh
+git clone https://github.com/edporras/souvlaki_rs.git
 ```
 
 Setup the libretime import script:
@@ -51,11 +51,19 @@ sudo chown -R www-data:www-data /srv/airtime/bin/libretime-import
 
 You can add the bin folder to your path so you can easily find the
 `srs_fetch` script. Alternatively, if you have a ruby dev environment,
-build and install a local gem:
+you can download the gem from the
+[releases](https://github.com/edporras/souvlaki_rs/releases) page:
+
+```sh
+gem install souvlaki_rs-0.12.2.gem
+```
+
+or build it using the source:
 
 ```sh
 gem install bundler
 bundle install
 gem build souvlaki_rs
-gem install souvlaki_rs-0.12.2.gem
 ```
+
+then install it as above.
