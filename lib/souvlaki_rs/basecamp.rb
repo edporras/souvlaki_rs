@@ -36,13 +36,15 @@ module SouvlakiRS
       @msg_list.each do |msg_id, msg_data|
         Net::HTTP.start(root_uri.host, root_uri.port, use_ssl: true) do |http|
           message_resp = request_message(http, msg_id)
-          subscriber_ids = subscriber_ids(message_resp)
+          if message_resp
+            subscriber_ids = subscriber_ids(message_resp)
 
-          SouvlakiRS.logger.info "Retrieved message #{msg_id} subscriber ids: #{subscriber_ids}" unless
-            subscriber_ids.empty?
+            SouvlakiRS.logger.info "Retrieved message #{msg_id} subscriber ids: #{subscriber_ids}" unless
+              subscriber_ids.empty?
 
-          msg_data[:id] = msg_id
-          post(http, msg_data, subscriber_ids)
+            msg_data[:id] = msg_id
+            post(http, msg_data, subscriber_ids)
+          end
         end
       end
     end
@@ -55,9 +57,9 @@ module SouvlakiRS
       http.request(request) do |response|
         return response.body if response.code.eql?('200')
 
-        SouvlakiRS.logger.error("Unable to retrieve basecamp message #{global_msg_id} - response code #{response.code}")
+        SouvlakiRS.logger.error("Unable to retrieve basecamp message #{msg_id} - response code #{response.code}")
       end
-      []
+      nil
     end
 
     #
