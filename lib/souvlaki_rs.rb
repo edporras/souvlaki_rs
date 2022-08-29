@@ -137,19 +137,8 @@ module SouvlakiRS
       files.each do
         next unless program[:imported]
 
-        msg_code = program[:code]
-        msg_code = "<a href=\"#{program[:origin]}\">#{msg_code}</a>" if program[:origin]
-        msg = "<strong>#{msg_code}</strong>: #{program[:tags][:title]}"
-
-        # report warning if duration info is given and program's looks odd
-        d_hms = Program.file_duration(program)
-        if d_hms
-          msg << " (Length warning: #{d_hms})"
-          SouvlakiRS.logger.warn "File duration (#{d_hms}) - block is #{block_len}"
-        end
-
-        msg_id = program[:msg_id] if program.key?(:msg_id)
-        bc2.add_text(msg, msg_id)
+        program[:d_hms] = Program.file_duration(program) if program.key?(:block_len)
+        bc2.register_ok(program)
       end
     end
 

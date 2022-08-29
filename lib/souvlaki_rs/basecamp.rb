@@ -24,11 +24,18 @@ module SouvlakiRS
 
     #
     # add a line of text
-    def add_text(txt, msg_id = nil)
-      msg_id ||= global_msg_id
-      msg_list[msg_id] = { text: [] } unless msg_list.key?(msg_id)
-      msg_list[msg_id][:text] << txt
-      self
+    def register_ok(program)
+      msg_code = program[:code]
+      msg_code = "<a href=\"#{program[:origin]}\">#{msg_code}</a>" if program[:origin]
+      msg = "<strong>#{msg_code}</strong>: #{program[:tags][:title]}"
+
+      # report warning if duration info is given and program's looks odd
+      if program[:d_hms]
+        msg << " (Length warning: #{program[:d_hms]})"
+        SouvlakiRS.logger.warn "File duration (#{program[:d_hms]}) - block is #{program[:block_len]}"
+      end
+
+      add_li_text(msg, program[:msg_id])
     end
 
     #
@@ -123,6 +130,14 @@ module SouvlakiRS
     def post_comment_uri(msg_id)
       ep = "#{base_uri}/#{user_id}/api/v1/projects/#{project_id}/messages/#{msg_id}/comments.json"
       URI.parse(ep).request_uri
+    end
+
+    #
+    # add a li entry
+    def add_li_text(text, msg_id)
+      msg_id ||= global_msg_id
+      msg_list[msg_id] = { text: [] } unless msg_list.key?(msg_id)
+      msg_list[msg_id][:text] << text
     end
   end
 end
