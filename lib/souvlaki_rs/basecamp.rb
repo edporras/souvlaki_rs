@@ -6,7 +6,8 @@ require 'json'
 module SouvlakiRS
   class Basecamp2
     USER_AGENT = 'SouvlakiRS Notifier'
-    attr_reader :base_uri, :user_id, :project_id, :username, :password, :root_uri
+    attr_reader :base_uri, :user_id, :project_id, :username, :password, :root_uri, :global_msg_id
+    attr_accessor :msg_list
 
     def initialize(creds)
       @base_uri = creds[:base_uri]
@@ -24,16 +25,16 @@ module SouvlakiRS
     #
     # add a line of text
     def add_text(txt, msg_id = nil)
-      msg_id ||= @global_msg_id
-      @msg_list[msg_id] = { text: [] } unless @msg_list.key?(msg_id)
-      @msg_list[msg_id][:text] << txt
+      msg_id ||= global_msg_id
+      msg_list[msg_id] = { text: [] } unless msg_list.key?(msg_id)
+      msg_list[msg_id][:text] << txt
       self
     end
 
     #
     # post a comment to the message
     def post_comment
-      @msg_list.each do |msg_id, msg_data|
+      msg_list.each do |msg_id, msg_data|
         Net::HTTP.start(root_uri.host, root_uri.port, use_ssl: true) do |http|
           message_resp = request_message(http, msg_id)
           if message_resp
