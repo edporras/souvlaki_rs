@@ -132,30 +132,19 @@ module SouvlakiRS
     end
 
     #
-    # register the text to post for the notification
-    def update_notifications(program, files)
-      files.each do
-        next unless program[:imported]
-
-        program[:d_hms] = Program.file_duration(program) if program.key?(:block_len)
-        bc2.register_ok(program)
-      end
-    end
-
-    #
     # this handles processing fetch the corresponding program's file(s)
     def process_program(program)
       files = fetch_files(program)
       return false if files.empty?
 
-      # tag & import handling
+      # tag, import, notify handling
       files.each do |file|
         program[:tags] = retag_file(program, file)
-        program[:imported] = import_file(file)
-      end
+        next unless import_file(file) && bc2
 
-      # append to notification
-      update_notifications(program, files) if bc2
+        program[:d_hms] = Program.file_duration(program) if program.key?(:block_len)
+        bc2.register_ok(program)
+      end
     end
 
     #
