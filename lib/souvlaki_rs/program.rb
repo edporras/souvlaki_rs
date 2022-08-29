@@ -7,9 +7,12 @@ module SouvlakiRS
     #
     # preps the program data
     def self.prepare(program, options)
+      program[:retitle] = true if program[:retitle].nil?
+      program[:today] ||= false
+
       # unless configured to fetch today's show, fetch yesterday's
       program[:pub_date] = options[:req_date]
-      if !options.key?(:date) && (!program.key?(:today) || !program[:today])
+      if !options.key?(:date) && !program[:today]
         program[:pub_date] -= 1
         SouvlakiRS.logger.info "Backdating pub date to yesterday (#{program[:pub_date]})"
       end
