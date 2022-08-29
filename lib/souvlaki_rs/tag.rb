@@ -15,7 +15,7 @@ module SouvlakiRS
 
     #
     # normalize the given tags according to the options
-    def self.normalize_tags(tags, opts)
+    def self.normalize(tags, opts)
       def_album = opts[:def_album]
       pub_date = opts[:pub_date]
 

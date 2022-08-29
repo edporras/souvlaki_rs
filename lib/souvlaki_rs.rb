@@ -16,7 +16,7 @@ require 'version'
 # SouvlakiRS module
 module SouvlakiRS
   class Manager
-    attr_reader :bc2, :config, :audioport, :airtime, :tmp_dir_path
+    attr_reader :bc2, :config, :audioport, :airtime, :tmp_dir_path, :options
 
     def initialize(options)
       @options = options
@@ -99,14 +99,13 @@ module SouvlakiRS
     # - artist (creator) is set if none is in the file
     def retag_file(program, file)
       orig_tags = Tag.audio_file_read_tags(file)
-      if @options[:write_tags]
-        retitle = program[:retitle].nil? || program[:retitle] != false
-        tags = Tag.normalize_tags(orig_tags,
-                                  def_album: program[:name],
-                                  def_artist: program[:creator],
-                                  def_genre: program[:genre],
-                                  pub_date: program[:pub_date],
-                                  rewrite_title: retitle)
+      if options[:write_tags]
+        tags = Tag.normalize(orig_tags,
+                             def_album: program[:name],
+                             def_artist: program[:creator],
+                             def_genre: program[:genre],
+                             pub_date: program[:pub_date],
+                             retitle: program[:retitle])
 
         Tag.audio_file_write_tags(file, tags)
         return tags
@@ -120,7 +119,7 @@ module SouvlakiRS
     #
     # import to libretime or fake it
     def import_file(file)
-      if @options[:import]
+      if options[:import]
         status = airtime.import(file)
         SouvlakiRS.logger.info "Airtime import '#{file}', status: #{status}"
         return status
@@ -164,7 +163,7 @@ module SouvlakiRS
     def codes_to_configs(program_codes)
       program_codes.map { |code| config.get_program_info(code) }
                    .select { |prog| Program.valid?(prog) }
-                   .map { |prog| Program.prepare(prog, @options) }
+                   .map { |prog| Program.prepare(prog, options) }
     end
 
     #

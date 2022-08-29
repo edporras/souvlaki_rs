@@ -77,7 +77,7 @@ if ARGV.empty? && !list_program_codes
 end
 
 # it all starts here
-options[:req_date] = options[:date] ? options[:date] : Date.today
+options[:req_date] = options[:date] || Date.today
 srs = SouvlakiRS::Manager.new(options)
 
 if list_program_codes

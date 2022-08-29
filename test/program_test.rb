@@ -29,6 +29,18 @@ module SouvlakiRS
         prog = Program.prepare({ base_url: 'http://www', pub_date: @thedate, format: '%Y%m%d', source: :file }, @options)
         assert_equal 'http://www/20221130', prog[:file_url]
       end
+
+      should 'set :retitle to true if not present' do
+        prog = Program.prepare({ base_url: 'http://www', source: :file }, @options)
+        assert_equal true, prog[:retitle]
+      end
+
+      should 'accept :retitle if present' do
+        prog = Program.prepare({ base_url: 'http://www', source: :file, retitle: false }, @options)
+        assert_equal false, prog[:retitle]
+        prog = Program.prepare({ base_url: 'http://www', source: :file, retitle: true }, @options)
+        assert_equal true, prog[:retitle]
+      end
     end
 
     context 'determine file_duration' do
