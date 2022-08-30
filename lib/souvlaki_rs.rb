@@ -176,8 +176,7 @@ module SouvlakiRS
     # joins libretime's install path with a subfolder for copying files to
     def get_program_path(name)
       path = File.join(airtime.install_root, 'tmp', name)
-      Util.check_destination(path)
-      path
+      Util.ensure(path)
     end
   end
 end

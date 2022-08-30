@@ -6,18 +6,17 @@ require 'filemagic'
 module SouvlakiRS
   module Util
     #
-    # ensure dest directory exists TODO: check
-    def self.check_destination(path, _opts = {})
+    # ensure dest directory exists
+    def self.ensure(path)
       unless Dir.exist?(path)
         begin
           FileUtils.mkdir_p(path)
         rescue Errno::ENOENT
-          SouvlakiRS.logger.error "Error making directory #{path}"
-          return false
+          raise "Error making directory #{path}"
         end
       end
 
-      true
+      path
     end
 
     #
