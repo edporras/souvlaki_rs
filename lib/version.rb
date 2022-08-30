@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
 module SouvlakiRS
-  VERSION      = '0.12.3-1'
-  RELEASE_DATE = '2022-08-29'
+  VERSION      = '0.12.3'
+  RELEASE_DATE = '2022-08-30'
 end
