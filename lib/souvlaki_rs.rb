@@ -100,13 +100,7 @@ module SouvlakiRS
     def retag_file(program, file)
       orig_tags = Tag.audio_file_read_tags(file)
       if options[:write_tags]
-        tags = Tag.normalize(orig_tags,
-                             def_album: program[:name],
-                             def_artist: program[:creator],
-                             def_genre: program[:genre],
-                             pub_date: program[:pub_date],
-                             retitle: program[:retitle])
-
+        tags = Tag.normalize(orig_tags, program)
         Tag.audio_file_write_tags(file, tags)
         return tags
       end
