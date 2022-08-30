@@ -15,25 +15,22 @@ module SouvlakiRS
 
     #
     # normalize the given tags according to the options
-    def self.normalize(tags, opts)
-      def_album = opts[:def_album]
-      pub_date = opts[:pub_date]
+    def self.normalize(tags, program)
+      def_album = program[:name]
+      pub_date = program[:pub_date]
 
       # prep the title - prepend the date to the album (show name) when
       # 1. there's no title tag
       # 2. the title tag equals the album title (show name)
       # 3. the title tag looks like a file name w/ .mp3 extension
       # 4. config forces it
-      if tags[:title].nil? ||
-         tags[:title] == def_album ||
-         (tags[:title].length.positive? && tags[:title].downcase.include?('mp3')) ||
-         opts[:rewrite_title]
+      if program[:retitle] || rewritable_title?(tags[:title], def_album)
         date = pub_date.strftime('%Y%m%d')
         old_t = tags[:title] || ''
         tags[:title] = "#{date} #{def_album}"
 
-        SouvlakiRS.logger.warn "Title ('#{old_t}') will be overwritten to '#{tags[:title]}'"
-      elsif tags[:title] && tags[:title].downcase.start_with?(def_album.downcase)
+        SouvlakiRS.logger.warn "Title ('#{old_t}') will be overwritten as '#{tags[:title]}'"
+      elsif tags[:title].downcase.start_with?(def_album.downcase)
         # title starts with program name - remove it to be less wordy and clean up leading -, :, or ws
         tags[:title] = tags[:title][def_album.length..].gsub(/^[\sfor\-:]*/, '')
         SouvlakiRS.logger.info "Trimmed title: '#{tags[:title]}'"
@@ -41,13 +38,17 @@ module SouvlakiRS
 
       # override artist & album (program name) to our consistent one
       tags[:album] = def_album
-      tags[:artist] = opts[:def_artist]
-      tags[:genre] = opts[:def_genre]
+      tags[:artist] = program[:creator]
+      tags[:genre] = program[:genre]
 
       # and set year because, why not
       tags[:year] = pub_date.strftime('%Y').to_i
 
       tags
+    end
+
+    def self.rewritable_title?(title, def_album)
+      title || title == def_album || title.downcase.include?('mp3')
     end
 
     #
