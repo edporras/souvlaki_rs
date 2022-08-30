@@ -2,10 +2,8 @@
 
 require 'fileutils'
 require 'filemagic'
-require 'uri'
 
 module SouvlakiRS
-  # utilities
   module Util
     #
     # ensure dest directory exists TODO: check
@@ -28,12 +26,6 @@ module SouvlakiRS
       return FileMagic.new.file(file) if File.exist?(file) && File.size(file) > 10
 
       nil
-    end
-
-    #
-    # check for valid URI
-    def self.valid_uri?(uri)
-      uri =~ /\A#{URI::DEFAULT_PARSER.make_regexp}\z/
     end
   end
 end
