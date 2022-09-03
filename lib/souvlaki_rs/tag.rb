@@ -48,7 +48,7 @@ module SouvlakiRS
     end
 
     def self.rewritable_title?(title, def_album)
-      title || title == def_album || title.downcase.include?('mp3')
+      title.nil? || title == def_album || title.downcase.include?('mp3')
     end
 
     #
