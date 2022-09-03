@@ -75,7 +75,7 @@ module SouvlakiRS
       SouvlakiRS.logger.info "fetched HTML feed from '#{program[:uri]}', status code: #{agent.page.code.to_i}"
 
       num_matches = html_page_dates(page).select { |d| d.eql? program[:pub_date].to_s }.size
-
+      titles = html_page_titles(page).take(num_matches)
       SouvlakiRS.logger.info " found #{num_matches} matches"
 
       files = []
@@ -88,6 +88,7 @@ module SouvlakiRS
         files << dest_file if dest_file
       end
 
+      program[:html_titles] = titles
       files
     end
 
@@ -100,6 +101,14 @@ module SouvlakiRS
           .map { |td_list| td_list[3] }
           .take(4)
           .map { |date_str| to_date(date_str) }
+    end
+
+    def html_page_titles(page)
+      page.xpath('//table[@id="content"]//tr[@class="boxSeparateA" or @class="boxSeparateB"]/td/a')
+          .map(&:text)
+          .each_slice(2)
+          .take(4)
+          .map(&:first)
     end
 
     #
@@ -137,8 +146,8 @@ module SouvlakiRS
         agent.follow_meta_refresh = true
         # agent.redirect_ok = true
         agent.keep_alive = true
-        agent.open_timeout = 30
-        agent.read_timeout = 30
+        agent.open_timeout = 60
+        agent.read_timeout = 60
         agent.pluggable_parser['audio/mpeg'] = Mechanize::Download
       end
     end

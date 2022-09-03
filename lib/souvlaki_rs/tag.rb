@@ -16,39 +16,54 @@ module SouvlakiRS
     #
     # normalize the given tags according to the options
     def self.normalize(tags, program)
-      def_album = program[:name]
-      pub_date = program[:pub_date]
+      tags[:title] = normalize_title(tags, program)
+
+      # override artist & album (program name) to our consistent one
+      tags[:album] = program[:name]
+      tags[:artist] = program[:creator]
+      tags[:genre] = program[:genre]
+
+      # and set year because, why not
+      tags[:year] = program[:pub_date].strftime('%Y').to_i
+
+      tags
+    end
+
+    def self.rewritable_title?(title, def_album)
+      title.nil? || title.empty? || title == def_album || title.downcase.include?('mp3')
+    end
+
+    def self.normalize_title(tags, program)
+      tags[:title] = program[:html_title] if program.key?(:html_title) && tags[:title].empty?
 
       # prep the title - prepend the date to the album (show name) when
       # 1. there's no title tag
       # 2. the title tag equals the album title (show name)
       # 3. the title tag looks like a file name w/ .mp3 extension
       # 4. config forces it
-      if program[:retitle] || rewritable_title?(tags[:title], def_album)
-        date = pub_date.strftime('%Y%m%d')
-        old_t = tags[:title] || ''
-        tags[:title] = "#{date} #{def_album}"
+      title = if program[:retitle] || rewritable_title?(tags[:title], program[:name])
+                suffix = '' #program[:part] || ''
+                program[:name] + suffix
+              elsif tags[:title].downcase.include?(program[:name].downcase)
+                cleanup_title(tags, program[:name])
+              end
 
-        SouvlakiRS.logger.warn "Title ('#{old_t}') will be overwritten as '#{tags[:title]}'"
-      elsif tags[:title].downcase.start_with?(def_album.downcase)
-        # title starts with program name - remove it to be less wordy and clean up leading -, :, or ws
-        tags[:title] = tags[:title][def_album.length..].gsub(/^[\sfor\-:]*/, '')
-        SouvlakiRS.logger.info "Trimmed title: '#{tags[:title]}'"
-      end
+      return tags[:title] if title.nil?
 
-      # override artist & album (program name) to our consistent one
-      tags[:album] = def_album
-      tags[:artist] = program[:creator]
-      tags[:genre] = program[:genre]
-
-      # and set year because, why not
-      tags[:year] = pub_date.strftime('%Y').to_i
-
-      tags
+      title = "#{program[:pub_date].strftime('%Y%m%d')} #{title}"
+      SouvlakiRS.logger.warn "Title ('#{tags[:title] || ''}') will be overwritten as '#{title}'"
+      title
     end
 
-    def self.rewritable_title?(title, def_album)
-      title.nil? || title == def_album || title.downcase.include?('mp3')
+    def self.cleanup_title(tags, def_album)
+      # title contains with program name - remove it to be less wordy and clean up leading -, :, or ws
+      SouvlakiRS.logger.info "Cleaning up title: '#{tags[:title]}'"
+      extra = tags[:title].gsub(def_album, '')
+                          .gsub(/[.:()]/, ' ')
+                          .gsub(/(?<=\d) +(?=\d)/, '')
+                          .squeeze(' ')
+                          .strip
+      "#{def_album} #{extra}"
     end
 
     #
@@ -112,11 +127,9 @@ module SouvlakiRS
 
     # --------------------------------------------------------
     def self.copy_tag(tag)
-      if tag
-        new_t = tag.strip
-        return new_t if new_t.length.positive?
-      end
-      nil
+      return tag.strip if tag
+
+      ''
     end
 
     #

@@ -99,8 +99,10 @@ module SouvlakiRS
     # - artist (creator) is set if none is in the file
     def retag_file(program, file)
       orig_tags = Tag.audio_file_read_tags(file)
+
       if options[:write_tags]
         tags = Tag.normalize(orig_tags, program)
+
         Tag.audio_file_write_tags(file, tags)
         return tags
       end
@@ -131,7 +133,8 @@ module SouvlakiRS
       return false if files.empty?
 
       # tag, import, notify handling
-      files.each do |file|
+      files.each_with_index do |file, idx|
+        program[:html_title] = program[:html_titles][idx] if program[:html_titles]
         program[:tags] = retag_file(program, file)
         next unless import_file(file) && bc2
 
