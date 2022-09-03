@@ -143,7 +143,10 @@ module SouvlakiRS
     #
     # process the list of parsed codes
     def process_codes(codes)
-      program_configs = codes_to_configs(valid_codes(codes))
+      codes = valid_codes(codes)
+      return false if codes.nil?
+
+      program_configs = codes_to_configs(codes)
       program_configs.each do |program|
         SouvlakiRS.logger.info "Request for #{program[:pub_title]} dated #{program[:pub_date]}, source: #{program[:source]}"
         process_program(program)
