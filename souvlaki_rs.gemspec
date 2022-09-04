@@ -34,7 +34,7 @@ Gem::Specification.new do |s|
   s.add_dependency('syslogger', '~> 1.6')
   s.add_dependency('taglib-ruby', '~> 1.1')
 
-  s.add_development_dependency('bundler', '>= 1.3')
+  s.add_development_dependency('bundler', '~> 2.3')
   s.add_development_dependency('pry-byebug', '~> 3.10')
   s.add_development_dependency('rake', '~> 13.0')
   s.add_development_dependency('rubocop', '~> 1.31')
