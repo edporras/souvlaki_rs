@@ -16,6 +16,7 @@ module SouvlakiRS
         SouvlakiRS.logger.info " Trying to fetch \"#{uri}\""
         # file hasn't been fetched
         begin
+          attempts ||= 1
           case io = OpenURI.open_uri(uri)
           when StringIO then File.write(dest, io.read)
           when Tempfile
@@ -30,9 +31,12 @@ module SouvlakiRS
           return false
         rescue Timeout::Error => e
           SouvlakiRS.logger.error "  Connection timeout error: #{e.io.status[1]}"
-          if File.exist(dest)
-            FileUtils.rm(dest)
-            SouvlakiRS.logger.info '   deleting remaining file'
+          FileUtils.rm(dest)
+
+          if (attempts += 1) < 5
+            sleep(60)
+            SouvlakiRS.logger.error '   retrying'
+            retry
           end
         rescue StandardError => e
           SouvlakiRS.logger.error "  Error: #{e.message}"
