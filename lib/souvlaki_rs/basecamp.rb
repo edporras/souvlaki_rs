@@ -25,9 +25,8 @@ module SouvlakiRS
     #
     # add a line of text
     def register_ok(program)
-      msg_code = program[:code]
-      msg_code = "<a href=\"#{program[:origin]}\">#{msg_code}</a>" if program[:origin]
-      msg = "<strong>#{msg_code}</strong>: #{program[:tags][:title]}"
+      msg = program_msg_code(program)
+      msg = "<strong>#{msg}</strong>: #{program[:tags][:title]}"
 
       # report warning if duration info is given and program's looks odd
       if program[:d_hms]
@@ -35,7 +34,16 @@ module SouvlakiRS
         SouvlakiRS.logger.warn "File duration (#{program[:d_hms]}) - block is #{program[:block_len]}"
       end
 
-      add_li_text(msg, program[:msg_id])
+      add_text(msg, :text, program[:msg_id])
+    end
+
+    def register_error(program)
+      return unless program.key?(:err_msg)
+
+      msg = program_msg_code(program)
+      msg = "<strong>#{msg}</strong>: #{program[:err_msg]}"
+
+      add_text(msg, :error, program[:msg_id])
     end
 
     #
@@ -105,9 +113,9 @@ module SouvlakiRS
     #
     # format the comment
     def make_content(msg_data)
-      c = "<p>SRS v#{SouvlakiRS::VERSION} auto-import:<ul>"
-      msg_data[:text].each { |t| c << "<li>#{t}</li>" }
-      c << '<ul>'
+      c = "<p>SRS v#{SouvlakiRS::VERSION} auto-import:</p>#{items_to_html_list(msg_data[:text])}"
+      c << "<br /><p>Unable to fetch:</p>#{items_to_html_list(msg_data[:error])}" unless
+        msg_data[:error].empty?
       c
     end
 
@@ -132,12 +140,27 @@ module SouvlakiRS
       URI.parse(ep).request_uri
     end
 
-    #
-    # add a li entry
-    def add_li_text(text, msg_id)
+    def add_text(text, kind, msg_id)
       msg_id ||= global_msg_id
-      msg_list[msg_id] = { text: [] } unless msg_list.key?(msg_id)
-      msg_list[msg_id][:text] << text
+      msg_list[msg_id] = new_msg unless msg_list.key?(msg_id)
+      msg_list[msg_id][kind] << text
+    end
+
+    def new_msg
+      { text: [], error: [] }
+    end
+
+    def program_msg_code(program)
+      msg = program[:code]
+      msg = "<a href=\"#{program[:origin]}\">#{msg}</a>" if program[:origin]
+      msg
+    end
+
+    def items_to_html_list(items)
+      s = '<ul>'
+      items.each { |t| s += "<li>#{t}</li>" }
+      s += '</ul>'
+      s
     end
   end
 end

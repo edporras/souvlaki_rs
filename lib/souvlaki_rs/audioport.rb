@@ -26,8 +26,11 @@ module SouvlakiRS
 
       begin
         agent = init_agent
-        rss, date = rss_shows_available(agent, program[:show_name_uri], program[:show_date])
-        return [] unless rss
+        rss, date, error = rss_shows_available(agent, program[:show_name_uri], program[:show_date])
+        if rss.nil?
+          program[:err_msg] = error if error
+          return []
+        end
 
         SouvlakiRS.logger.info " date match (#{date})"
 
@@ -203,7 +206,7 @@ module SouvlakiRS
       date = to_date(rss.search('//item/pubDate').text)
       if date != show_date
         SouvlakiRS.logger.info "  item date #{date} does not match"
-        return nil
+        return [nil, nil, "RSS last updated #{date}"]
       end
 
       [rss, date]

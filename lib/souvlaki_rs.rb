@@ -130,7 +130,10 @@ module SouvlakiRS
     # this handles processing fetch the corresponding program's file(s)
     def process_program(program)
       files = fetch_files(program)
-      return false if files.empty?
+      if files.empty?
+        bc2&.register_error(program)
+        return
+      end
 
       # tag, import, notify handling
       files.each_with_index do |file, idx|
