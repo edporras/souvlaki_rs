@@ -54,6 +54,11 @@ optparse = OptionParser.new do |opts|
     options[:verbose] = true
   end
 
+  opts.on('-V', '--version', 'Display program version and exit.') do
+    warn "#{$PROGRAM_NAME} v#{SouvlakiRS::VERSION}"
+    exit
+  end
+
   opts.on('-l', '--list_program_codes', 'Display list of program codes to pass as the argument.') do
     list_program_codes = true
   end
