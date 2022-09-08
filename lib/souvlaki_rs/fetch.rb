@@ -28,7 +28,6 @@ module SouvlakiRS
           SouvlakiRS.logger.info " Wrote to #{dest}"
         rescue OpenURI::HTTPError => e
           SouvlakiRS.logger.error "  Read error: (#{e.io.status[1]})"
-          program[:err_msg] = 'File not found'
           return false
         rescue Timeout::Error => e
           SouvlakiRS.logger.error "  Connection timeout error: #{e.io.status[1]}"

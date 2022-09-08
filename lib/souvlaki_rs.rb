@@ -36,6 +36,7 @@ module SouvlakiRS
       mp3_dest = File.join(show_dir, File.basename(program[:file_url]))
       return mp3_dest if Fetch.fetch_file(program[:file_url], mp3_dest)
 
+      program[:err_msg] = 'File not found'
       SouvlakiRS.logger.error " Unable to download '#{program[:pub_title]}' from #{program[:file_url]}"
       nil
     end
