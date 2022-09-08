@@ -196,8 +196,8 @@ module SouvlakiRS
       SouvlakiRS.logger.info "fetched RSS feed from '#{rss_uri}', status code: #{agent.page.code.to_i}"
 
       chan_pub_date = to_date(rss.search('//channel/pubDate').text)
-      if chan_pub_date > show_date
-        SouvlakiRS.logger.info " RSS pub date (#{chan_pub_date}) is more recent than requested date"
+      if show_date > chan_pub_date
+        SouvlakiRS.logger.info " RSS pub date (#{chan_pub_date}) is before requested date"
         return nil
       end
 
