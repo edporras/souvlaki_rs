@@ -54,7 +54,7 @@ module SouvlakiRS
       program[:show_date] = program[:pub_date].strftime(DATE_FORMAT)
       program[:use_html] |= false
       program[:uri] = "/index.php?op=series&series=#{program[:show_name_uri]}"
-      program[:origin] = "#{config[:base_uri]}/#{program[:uri]}"
+      program[:origin] = "#{URI.parse(config[:base_uri]).origin}/#{program[:uri]}"
       program
     end
 
