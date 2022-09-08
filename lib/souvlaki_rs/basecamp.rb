@@ -25,7 +25,7 @@ module SouvlakiRS
     #
     # add a line of text
     def register_ok(program)
-      msg = program_msg_code(program)
+      msg = program_msg_info(program, :code)
       msg = "<strong>#{msg}</strong>: #{program[:tags][:title]}"
 
       # report warning if duration info is given and program's looks odd
@@ -40,7 +40,7 @@ module SouvlakiRS
     def register_error(program)
       return unless program.key?(:err_msg)
 
-      msg = program_msg_code(program)
+      msg = program_msg_info(program, :title)
       msg = "<strong>#{msg}</strong>: #{program[:err_msg]}"
 
       add_text(msg, :error, program[:msg_id])
@@ -150,8 +150,8 @@ module SouvlakiRS
       { text: [], error: [] }
     end
 
-    def program_msg_code(program)
-      msg = program[:code]
+    def program_msg_info(program, field_key)
+      msg = program[field_key]
       msg = "<a href=\"#{program[:origin]}\">#{msg}</a>" if program[:origin]
       msg
     end
