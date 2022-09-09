@@ -14,7 +14,7 @@ module SouvlakiRS
       program[:pub_date] = options[:req_date]
       if options[:date].nil? && !program[:today]
         program[:pub_date] -= 1
-        SouvlakiRS.logger.info "Backdating pub date to yesterday (#{program[:pub_date]})"
+        SouvlakiRS.logger.info " Backdating #{program[:code]} pub date to yesterday (#{program[:pub_date]})"
       end
 
       case program[:source]
