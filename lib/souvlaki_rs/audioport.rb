@@ -197,7 +197,7 @@ module SouvlakiRS
 
       chan_pub_date = to_date(rss.search('//channel/pubDate').text)
       if show_date > chan_pub_date
-        SouvlakiRS.logger.info " RSS pub date (#{chan_pub_date}) is before requested date #{show_date}"
+        SouvlakiRS.logger.info " RSS pub date (#{chan_pub_date}) predates requested date (#{show_date})"
         return nil
       end
 
@@ -205,7 +205,7 @@ module SouvlakiRS
 
       date = to_date(rss.search('//item/pubDate').text)
       if date != show_date
-        SouvlakiRS.logger.info "  item date #{date} does not match"
+        SouvlakiRS.logger.info "  RSS item date #{date} does not match requested date #{show_date}"
         return [nil, nil, "RSS last updated #{date}"]
       end
 

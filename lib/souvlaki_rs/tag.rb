@@ -101,7 +101,7 @@ module SouvlakiRS
         # Read basic attributes
         id3v2 = file.id3v2_tag
         if id3v2
-          SouvlakiRS.logger.info "ID3V2 title '#{id3v2.title}'"
+          # SouvlakiRS.logger.info "ID3V2 title '#{id3v2.title}'"
           tags[:title]  = copy_tag(id3v2.title)
           tags[:artist] = copy_tag(id3v2.artist)
           tags[:album]  = copy_tag(id3v2.album)
@@ -113,7 +113,7 @@ module SouvlakiRS
           id3v1 = file.id3v1_tag
 
           if id3v1
-            SouvlakiRS.logger.info "ID3V1 title '#{id3v1.title}'"
+            # SouvlakiRS.logger.info "ID3V1 title '#{id3v1.title}'"
             tags[:title]  = copy_tag(id3v1.title) if tags[:title].nil?
             tags[:artist] = copy_tag(id3v1.artist) if tags[:artist].nil?
           end
@@ -136,7 +136,7 @@ module SouvlakiRS
     # tag a file w/ id3v1 and id3v2 values
     def self.audio_file_write_tags(filepath, tags)
       genre = GENRES[tags[:genre]] unless tags[:genre].nil?
-      SouvlakiRS.logger.info "Mapping genre '#{tags[:genre]}' => '#{genre}'" if genre
+      SouvlakiRS.logger.info " Mapping genre '#{tags[:genre]}' => '#{genre}'" if genre
 
       status = TagLib::MPEG::File.open(filepath) do |file|
         [file.id3v1_tag, file.id3v2_tag].each do |tag|
@@ -152,7 +152,7 @@ module SouvlakiRS
       end
       return true if status
 
-      SouvlakiRS.logger.error "Failed to save tags for #{filepath}"
+      SouvlakiRS.logger.error "  Failed to save tags for #{filepath}"
       false
     end
   end
