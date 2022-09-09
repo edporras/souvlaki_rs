@@ -18,6 +18,8 @@ module SouvlakiRS
       end
 
       case program[:source]
+      when :audioport
+        program[:use_html] ||= options[:force_html]
       when :file
         file_url = program[:base_url]
         file_url += "/#{program[:pub_date].strftime(program[:format])}" if program[:format]

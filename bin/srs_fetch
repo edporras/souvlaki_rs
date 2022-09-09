@@ -49,6 +49,11 @@ optparse = OptionParser.new do |opts|
     options[:config] = path
   end
 
+  options[:force_html] = false
+  opts.on('-w', '--force_html', 'Force fetch to use HTML as source (audioport only).') do
+    options[:force_html] = true
+  end
+
   options[:verbose] = false
   opts.on('-v', '--verbose', 'Logs info messages in addition to warn and errors.') do
     options[:verbose] = true

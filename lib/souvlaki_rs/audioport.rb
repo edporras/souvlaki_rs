@@ -26,15 +26,18 @@ module SouvlakiRS
 
       begin
         agent = init_agent
-        rss, date, error = rss_shows_available(agent, program[:show_name_uri], program[:show_date])
-        if rss.nil?
-          program[:err_msg] = error if error
-          return []
-        end
+        files += if program[:use_html]
+                   from_html(agent, program)
+                 else
+                   rss, date, error = rss_shows_available(agent, program[:show_name_uri], program[:show_date])
+                   if rss.nil?
+                     program[:err_msg] = error if error
+                     return []
+                   end
 
-        SouvlakiRS.logger.info " date match (#{date})"
-
-        files += program[:use_html] ? from_html(agent, program) : from_rss(agent, rss)
+                   SouvlakiRS.logger.info " date match (#{date})"
+                   from_rss(agent, rss)
+                 end
       rescue StandardError => e
         SouvlakiRS.logger.error "  Fetch error: #{e}"
       end
