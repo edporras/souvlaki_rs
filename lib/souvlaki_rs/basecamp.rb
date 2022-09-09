@@ -40,7 +40,7 @@ module SouvlakiRS
     def register_error(program)
       return unless program.key?(:err_msg)
 
-      msg = program_msg_info(program, :title)
+      msg = program_msg_info(program, :pub_title)
       msg = "<strong>#{msg}</strong>: #{program[:err_msg]}"
 
       add_text(msg, :error, program[:msg_id])
