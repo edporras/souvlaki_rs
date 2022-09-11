@@ -34,7 +34,7 @@ module SouvlakiRS
         SouvlakiRS.logger.warn "File duration (#{program[:d_hms]}) - block is #{program[:block_len]}"
       end
 
-      add_text(msg, :text, program[:msg_id])
+      add_success_text(program[:msg_id], msg)
     end
 
     def register_error(program)
@@ -42,9 +42,7 @@ module SouvlakiRS
 
       msg = program[:pub_title]
       msg = "<a href=\"#{program[:origin]}\">#{msg}</a>" if program[:origin]
-      msg = "#{msg}: #{program[:err_msg]}"
-
-      add_text(msg, :error, program[:msg_id])
+      add_error_text(program[:msg_id], program[:err_msg], msg)
     end
 
     #
@@ -115,8 +113,19 @@ module SouvlakiRS
     # format the comment
     def make_content(msg_data)
       c = "<p>SRS v#{SouvlakiRS::VERSION} auto-import:</p>#{items_to_html_list(msg_data[:text])}"
-      c << "<br /><p>Unable to fetch:</p>#{items_to_html_list(msg_data[:error])}" unless
-        msg_data[:error].empty?
+
+      unless msg_data[:error].empty?
+        errors = []
+        errors << msg_data[:error].group_by { |e| e[:text] }
+                                  .map do |k, v|
+                                    s = v.map { |e| e[:error_msg] }.join(', ')
+                                    "#{k}: #{s}"
+                                  end
+
+        html_errors = errors_to_html_list(errors.flatten)
+        c << "<br /><p>Unable to fetch:</p>#{html_errors}"
+      end
+
       c
     end
 
@@ -141,10 +150,16 @@ module SouvlakiRS
       URI.parse(ep).request_uri
     end
 
-    def add_text(text, kind, msg_id)
+    def add_success_text(msg_id, text)
       msg_id ||= global_msg_id
       msg_list[msg_id] = new_msg unless msg_list.key?(msg_id)
-      msg_list[msg_id][kind] << text
+      msg_list[msg_id][:text] << text
+    end
+
+    def add_error_text(msg_id, text, error_msg)
+      msg_id ||= global_msg_id
+      msg_list[msg_id] = new_msg unless msg_list.key?(msg_id)
+      msg_list[msg_id][:error] << { error_msg:, text: }
     end
 
     def new_msg
@@ -154,6 +169,13 @@ module SouvlakiRS
     def items_to_html_list(items)
       s = '<ul>'
       items.each { |t| s += "<li>#{t}</li>" }
+      s += '</ul>'
+      s
+    end
+
+    def errors_to_html_list(errors)
+      s = '<ul>'
+      errors.each { |t| s += "<li>#{t}</li>" }
       s += '</ul>'
       s
     end
