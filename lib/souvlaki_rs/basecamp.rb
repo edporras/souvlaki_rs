@@ -115,18 +115,22 @@ module SouvlakiRS
       c = "<p>SRS v#{SouvlakiRS::VERSION} auto-import:</p>#{items_to_html_list(msg_data[:text])}"
 
       unless msg_data[:error].empty?
-        errors = []
-        errors << msg_data[:error].group_by { |e| e[:text] }
-                                  .map do |k, v|
-                                    s = v.map { |e| e[:error_msg] }.join(', ')
-                                    "#{k}: #{s}"
-                                  end
-
-        html_errors = errors_to_html_list(errors.flatten)
+        html_errors = errors_to_html_list(errors_by_msg(msg_data[:error]))
         c << "<br /><p>Unable to fetch:</p>#{html_errors}"
       end
 
       c
+    end
+
+    def errors_by_msg(err)
+      errors = []
+      errors << err.group_by { |e| e[:text] }
+                   .sort_by { |k, _v| k }
+                   .map do |k, v|
+                     s = v.map { |e| e[:error_msg] }.join(', ')
+                     "#{k}: #{s}"
+                   end
+      errors.flatten
     end
 
     #
