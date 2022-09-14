@@ -55,7 +55,7 @@ you can download the gem from the
 [releases](https://github.com/edporras/souvlaki_rs/releases) page:
 
 ```sh
-gem install souvlaki_rs-0.12.9.gem
+gem install souvlaki_rs-0.12.10.gem
 ```
 
 or build it using the source:
