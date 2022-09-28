@@ -39,7 +39,7 @@ optparse = OptionParser.new do |opts|
     begin
       options[:date] = Date.strptime(date, '%Y%m%d')
     rescue StandardError => e
-      SouvlakiRS.logger.error "Invalid date argument (#{date}): #{e}"
+      STDERR.puts "Invalid date argument (#{date}): #{e}"
       exit
     end
   end
